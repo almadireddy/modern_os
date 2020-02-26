@@ -11,6 +11,7 @@
 #include <kern/dwarf_error.h>
 
 
+
 struct _Dwarf_Fde _fde;
 Dwarf_Fde fde = &_fde;
 struct _Dwarf_Cie _cie;
@@ -101,6 +102,7 @@ static const char *const dwarf_regnames_i386[] =
 #define reg_names_ptr dwarf_regnames_i386
 
 #endif
+
 
 
 int list_func_die(struct Ripdebuginfo *info, Dwarf_Die *die, uint64_t addr)
@@ -287,8 +289,10 @@ debuginfo_rip(uintptr_t addr, struct Ripdebuginfo *info)
 	if (addr >= ULIM) {
 		elf = (void *)0x10000 + KERNBASE;
 	} else {
+
 		// Can't search for user-level addresses yet!
 		panic("User address");
+
 	}
 	_dwarf_init(dbg, elf);
 
