@@ -1,4 +1,3 @@
-#line 2 "../inc/memlayout.h"
 #ifndef JOS_INC_MEMLAYOUT_H
 #define JOS_INC_MEMLAYOUT_H
 
@@ -145,7 +144,6 @@
 // The location of the user-level STABS data structure
 #define USTABDATA	(PTSIZE)
 
-#line 153 "../inc/memlayout.h"
 #ifndef __ASSEMBLER__
 
 typedef uint64_t pml4e_t;
@@ -153,7 +151,6 @@ typedef uint64_t pdpe_t;
 typedef uint64_t pte_t;
 typedef uint64_t pde_t;
 
-#line 161 "../inc/memlayout.h"
 #if JOS_USER
 /*
  * The page directory entry corresponding to the virtual address range
@@ -199,6 +196,5 @@ struct PageInfo {
 	uint16_t pp_ref;
 };
 
-#line 207 "../inc/memlayout.h"
 #endif /* !__ASSEMBLER__ */
 #endif /* !JOS_INC_MEMLAYOUT_H */

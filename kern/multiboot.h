@@ -1,4 +1,3 @@
-#line 2 "../kern/multiboot.h"
 
 #ifndef JOS_MB_H
 #define JOS_MB_H

@@ -1,4 +1,3 @@
-#line 2 "../kern/pmap.h"
 /* See COPYRIGHT for copyright information. */
 
 #ifndef JOS_KERN_PMAP_H
@@ -9,7 +8,7 @@
 
 #include <inc/memlayout.h>
 #include <inc/assert.h>
-#line 15 "../kern/pmap.h"
+struct Env;
 
 extern char bootstacktop[], bootstack[];
 
@@ -61,7 +60,9 @@ void	page_decref(struct PageInfo *pp);
 
 void	tlb_invalidate(pml4e_t *pml4e, void *va);
 
-#line 75 "../kern/pmap.h"
+int	user_mem_check(struct Env *env, const void *va, size_t len, int perm);
+void	user_mem_assert(struct Env *env, const void *va, size_t len, int perm);
+
 static inline ppn_t
 page2ppn(struct PageInfo *pp)
 {
