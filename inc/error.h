@@ -1,3 +1,4 @@
+#line 2 "../inc/error.h"
 /* See COPYRIGHT for copyright information. */
 
 #ifndef JOS_INC_ERROR_H
@@ -14,6 +15,7 @@ enum {
 				// the maximum allowed
 	E_FAULT		= 6,	// Memory fault
 	E_NO_SYS	= 7,	// Unimplemented system call
+#line 34 "../inc/error.h"
 	// VMM error codes.
 	E_NO_VMX = 17,    // The processor doesn't support VMX or 
 	// is turned off in the BIOS

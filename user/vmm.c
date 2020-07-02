@@ -19,6 +19,7 @@ static int
 map_in_guest( envid_t guest, uintptr_t gpa, size_t memsz, 
 	      int fd, size_t filesz, off_t fileoffset ) {
 	/* Your code here */
+
 	return -E_NO_SYS;
 
 } 
@@ -33,11 +34,13 @@ static int
 copy_guest_kern_gpa( envid_t guest, char* fname ) {
 
 	/* Your code here */
+
 	return -E_NO_SYS;
 }
 
 void
 umain(int argc, char **argv) {
+
 }
 
 
