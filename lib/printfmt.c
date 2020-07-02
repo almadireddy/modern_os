@@ -1,4 +1,3 @@
-
 // Stripped-down primitive printf-style formatting routines,
 // used in common by printf, sprintf, fprintf, etc.
 // This code is also used by both the kernel and user programs.
@@ -27,7 +26,6 @@ static const char * const error_string[MAXERROR] =
 	[E_NO_MEM]	= "out of memory",
 	[E_NO_FREE_ENV]	= "out of environments",
 	[E_FAULT]	= "segmentation fault",
-
 };
 
 /*
@@ -212,11 +210,11 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 
 			// (unsigned) octal
 		case 'o':
-
-			num = getuint(&aq, 3);
-			base = 8;
-			goto number;
-
+			// Replace this with your code.
+			putch('X', putdat);
+			putch('X', putdat);
+			putch('X', putdat);
+			break;
 
 			// pointer
 		case 'p':
