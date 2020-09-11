@@ -61,10 +61,17 @@ int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
 	// Your code here.
+	
+	uint64_t *rbp;
+	rbp = (uint64_t*)read_rbp();
+
+	cprintf("Stack backtrace: \n");
+	for(;rbp != NULL;){
+		cprintf("rbp %016x rip %016x \n", rbp, rbp[1]);
+		rbp = (uint64_t *)(*rbp);
+	}
 	return 0;
 }
-
-
 
 /***** Kernel monitor command interpreter *****/
 
