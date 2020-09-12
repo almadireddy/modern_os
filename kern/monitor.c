@@ -62,14 +62,44 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
 	// Your code here.
 	
-	uint64_t *rbp;
-	rbp = (uint64_t*)read_rbp();
+	uint64_t rip;
+	uint64_t rbp = read_rbp();
+
+	read_rip(rip);
 
 	cprintf("Stack backtrace: \n");
-	for(;rbp != NULL;){
-		cprintf("rbp %016x rip %016x \n", rbp, rbp[1]);
-		rbp = (uint64_t *)(*rbp);
+	while(rbp != 0){
+		cprintf("rbp %016x rip %016x \n", rbp, rip);
+		struct Ripdebuginfo info;
+		int debug_rip = debuginfo_rip((uintptr_t)rip, &info);
+		
+		if (debug_rip != -1){
+			int num_arg = info.rip_fn_narg;
+			
+			// _dwarf_frame_params
+			cprintf("%s:%d: %s+%016d args:%d ", 
+				info.rip_file, info.rip_line, 
+				info.rip_fn_name, rip - info.rip_fn_addr, 
+				num_arg+1);
+			
+			//Use return adress to form frame base
+			uint64_t frame_base = rbp + 8 + 8;
+			int arg_point = 0;
+			while (arg_point <= num_arg){
+				int offset = info.offset_fn_arg[arg_point];
+				uint64_t arg = frame_base + offset;
+
+				cprintf("%016x ", *(uint32_t *)arg);
+				arg_point++;
+			}
+		}
+
+		cprintf("\n");
+
+		rip = *(uint64_t *)(rbp + 8);
+		rbp = *(uint64_t *)(rbp);
 	}
+
 	return 0;
 }
 
