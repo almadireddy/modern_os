@@ -24,68 +24,68 @@ extern pml4e_t *boot_pml4e;
  * and returns the corresponding physical address.  It panics if you pass it a
  * non-kernel virtual address.
  */
-#define PADDR(kva)						\
-({								\
-	physaddr_t __m_kva = (physaddr_t) (kva);		\
-	if (__m_kva < KERNBASE)					\
-		panic("PADDR called with invalid kva %08lx", __m_kva);\
-	__m_kva - KERNBASE;					\
+#define PADDR(kva)            \
+({                \
+  physaddr_t __m_kva = (physaddr_t) (kva);    \
+  if (__m_kva < KERNBASE)         \
+    panic("PADDR called with invalid kva %08lx", __m_kva);\
+  __m_kva - KERNBASE;         \
 })
 
 /* This macro takes a physical address and returns the corresponding kernel
  * virtual address.  It panics if you pass an invalid physical address. */
-#define KADDR(pa)						\
-({								\
-	physaddr_t __m_pa = (pa);				\
-	uint32_t __m_ppn = PPN(__m_pa);\
-	if (__m_ppn >= npages)					\
-		panic("KADDR called with invalid pa %08lx", __m_pa);\
-	(void*) ((uint64_t)(__m_pa + KERNBASE));				\
+#define KADDR(pa)           \
+({                \
+  physaddr_t __m_pa = (pa);       \
+  uint32_t __m_ppn = PPN(__m_pa);\
+  if (__m_ppn >= npages)          \
+    panic("KADDR called with invalid pa %08lx", __m_pa);\
+  (void*) ((uint64_t)(__m_pa + KERNBASE));        \
 })
 
 
 enum {
-	// For page_alloc, zero the returned physical page.
-	ALLOC_ZERO = 1<<0,
+  // For page_alloc, zero the returned physical page.
+  ALLOC_ZERO = 1<<0,
 };
 
-void    x64_vm_init();
+void  x64_vm_init();
 
-void	page_init(void);
+void  page_init(void);
 struct PageInfo * page_alloc(int alloc_flags);
-void	page_free(struct PageInfo *pp);
-int	page_insert(pml4e_t *pml4e, struct PageInfo *pp, void *va, int perm);
-void	page_remove(pml4e_t *pml4e, void *va);
+void  page_free(struct PageInfo *pp);
+int page_insert(pml4e_t *pml4e, struct PageInfo *pp, void *va, int perm);
+void  page_remove(pml4e_t *pml4e, void *va);
 struct PageInfo *page_lookup(pml4e_t *pml4e, void *va, pte_t **pte_store);
-void	page_decref(struct PageInfo *pp);
+void  page_decref(struct PageInfo *pp);
 
-void	tlb_invalidate(pml4e_t *pml4e, void *va);
+void  tlb_invalidate(pml4e_t *pml4e, void *va);
 
 #line 75 "../kern/pmap.h"
 static inline ppn_t
 page2ppn(struct PageInfo *pp)
 {
-	return pp - pages;
+  return pp - pages;
 }
 
 static inline physaddr_t
 page2pa(struct PageInfo *pp)
 {
-	return page2ppn(pp) << PGSHIFT;
+  return page2ppn(pp) << PGSHIFT;
 }
 
 static inline struct PageInfo*
 pa2page(physaddr_t pa)
 {
-	if (PPN(pa) >= npages)
-		panic("pa2page called with invalid pa");
-	return &pages[PPN(pa)];
+  if (PPN(pa) >= npages)
+    panic("pa2page called with invalid pa");
+  return &pages[PPN(pa)];
 }
 
 static inline void*
 page2kva(struct PageInfo *pp)
 {
-	return KADDR(page2pa(pp));
+  return KADDR(page2pa(pp));
 }
 
 pte_t *pgdir_walk(pde_t *pgdir, const void *va, int create);
