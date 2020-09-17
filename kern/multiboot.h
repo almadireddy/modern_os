@@ -47,6 +47,7 @@ static __inline uint32_t restrictive_type(uint32_t t1, uint32_t t2);
    uint32_t entry_addr;
  } multiboot_header_t;
  
+
  /* The symbol table for a.out. */
  typedef struct aout_symbol_table
  {
@@ -55,6 +56,7 @@ static __inline uint32_t restrictive_type(uint32_t t1, uint32_t t2);
    uint32_t addr;
    uint32_t reserved;
  } aout_symbol_table_t;
+
  
  /* The section header table for ELF. */
  typedef struct elf_section_header_table
@@ -64,6 +66,7 @@ static __inline uint32_t restrictive_type(uint32_t t1, uint32_t t2);
    uint32_t addr;
    uint32_t shndx;
  } elf_section_header_table_t;
+
  
  /* The Multiboot information. */
  typedef struct multiboot_info
@@ -83,6 +86,7 @@ static __inline uint32_t restrictive_type(uint32_t t1, uint32_t t2);
    uint32_t mmap_length;
    uint32_t mmap_addr;
  } multiboot_info_t;
+
  
  /* The module structure. */
  typedef struct module
@@ -93,6 +97,7 @@ static __inline uint32_t restrictive_type(uint32_t t1, uint32_t t2);
    uint32_t reserved;
  } module_t;
  
+
  /* The memory map. Be careful that the offset 0 is base_addr_low
     but no size. */
  typedef struct memory_map
@@ -104,6 +109,7 @@ static __inline uint32_t restrictive_type(uint32_t t1, uint32_t t2);
    uint32_t length_high;
    uint32_t type;
  } memory_map_t;
+
 
 static __inline uint32_t restrictive_type(uint32_t t1, uint32_t t2) {
   if(t1==MB_TYPE_BAD || t2==MB_TYPE_BAD)
