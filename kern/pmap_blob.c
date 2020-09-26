@@ -216,26 +216,17 @@ boot_alloc(uint32_t n)
 	// to a multiple of PGSIZE.
 	//
 	// LAB 2: Your code here.
-    if (n == 0) {
-        return nextfree;
-    }
-
-    // check for whether we are out of memory
-    // -> nextfree is virtual 
-    // -> add n to it 
-    // -> covert it to physical
-    // -> check if it is in bounds 
-    if (PADDR(ROUNDUP(nextfree + n, PGSIZE)) > npages*PGSIZE) {
-	panic("boot_alloc: paniced on out of memory");
-    }
-
-    if (n > 0) {
+	if (n == 0) 
+		return nextfree;
 	result = nextfree;
-	nextfree = ROUNDUP(nextfree + n, PGSIZE);
+	nextfree = nextfree + n;
+	nextfree = ROUNDUP(nextfree, PGSIZE);
+	//process memory wrap arounds on memory full
+	if((uint64_t)nextfree < (uint64_t)end)
+	{
+		panic("we're out of memory");
+	}
 	return result;
-    }
-
-    return NULL;
 }
 
 // Set up a four-level page table:
@@ -259,16 +250,12 @@ x64_vm_init(void)
 	//panic("i386_vm_init: This function is not finished\n");
 	//////////////////////////////////////////////////////////////////////
 	// create initial page directory.
-
+	//panic("x64_vm_init: this function is not finished\n");
 	pml4e = boot_alloc(PGSIZE);
 	memset(pml4e, 0, PGSIZE);
 	boot_pml4e = pml4e;
 	boot_cr3 = PADDR(pml4e);
-
-
-
-
-	
+	//cprintf("boot_pml4e is [%x]", boot_pml4e);
 	//////////////////////////////////////////////////////////////////////
 	// Allocate an array of npages 'struct PageInfo's and store it in 'pages'.
 	// The kernel uses this array to keep track of physical pages: for
