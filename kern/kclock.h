@@ -1,4 +1,3 @@
-#line 2 "../kern/kclock.h"
 /* See COPYRIGHT for copyright information. */
 
 #ifndef JOS_KERN_KCLOCK_H

@@ -1,4 +1,3 @@
-
 #include <inc/stdio.h>
 #include <inc/error.h>
 
@@ -10,19 +9,15 @@ readline(const char *prompt)
 {
 	int i, c, echoing;
 
-
 	if (prompt != NULL)
 		cprintf("%s", prompt);
-
 
 	i = 0;
 	echoing = iscons(0);
 	while (1) {
 		c = getchar();
 		if (c < 0) {
-
 			cprintf("read error: %e\n", c);
-
 			return NULL;
 		} else if ((c == '\b' || c == '\x7f') && i > 0) {
 			if (echoing)

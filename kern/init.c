@@ -9,15 +9,12 @@
 #include <kern/console.h>
 #include <kern/kdebug.h>
 #include <kern/dwarf_api.h>
-
 #include <kern/pmap.h>
 #include <kern/kclock.h>
-
+#include <kern/env.h>
+#include <kern/trap.h>
 
 uint64_t end_debug;
-
-
-
 
 
 
@@ -38,30 +35,32 @@ i386_init(void)
 	// Can't call cprintf until after we do this!
 	cons_init();
 
-
 	cprintf("6828 decimal is %o octal!\n", 6828);
-
-
 
 	extern char end[];
 	end_debug = read_section_headers((0x10000+KERNBASE), (uintptr_t)end);
 
-
-
 	// Lab 2 memory management initialization functions
 	x64_vm_init();
 
+	// Lab 3 user environment initialization functions
+	env_init();
+	trap_init();
 
 
 
+#if defined(TEST)
+	// Don't touch -- used by grading script!
+	ENV_CREATE(TEST, ENV_TYPE_USER);
+#else
+	// Touch all you want.
 
+	ENV_CREATE(user_hello, ENV_TYPE_USER);
+#endif // TEST*
 
-	// Drop into the kernel monitor.
-	while (1)
-		monitor(NULL);
-
+	// We only have one user environment for now, so just run it.
+	env_run(&envs[0]);
 }
-
 
 
 
@@ -88,9 +87,7 @@ _panic(const char *file, int line, const char *fmt,...)
 	__asm __volatile("cli; cld");
 
 	va_start(ap, fmt);
-
 	cprintf("kernel panic at %s:%d: ", file, line);
-
 	vcprintf(fmt, ap);
 	cprintf("\n");
 	va_end(ap);
