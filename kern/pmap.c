@@ -511,45 +511,43 @@ page_decref(struct PageInfo* pp)
 pte_t *
 pml4e_walk(pml4e_t *pml4e, const void *va, int create)
 {
-	//Need to return
-	pte_t * pml4eIndexPtr = NULL;
-	int pml4eIndex;
-	int pdpeIndex;
-	uint64_t temp;
+	pte_t * pml4e_IndexPointer = NULL;
+	int pml4e_Index;
+	uint64_t pml4e_temp;
 	struct PageInfo * page = NULL;
 	if(pml4e == NULL)
 	{
 		return NULL;
 	}
-	pml4eIndex = PML4(va);
-	if((uint64_t*)pml4e[pml4eIndex] == NULL && create == false)
+	pml4e_Index = PML4(va);
+	if((uint64_t*)pml4e[pml4e_Index] == NULL && create == false)
 	{
 		return NULL;
 	}
-	else if((uint64_t*)pml4e[pml4eIndex] == NULL && create == true)
+	else if((uint64_t*)pml4e[pml4e_Index] == NULL && create == true)
 	{
 		int perm = PTE_W | PTE_U | PTE_P;
 		page = page_alloc(ALLOC_ZERO);
 		if(!page)
 			return NULL;
 		page->pp_ref++;
-		pml4e[pml4eIndex] = page2pa(page) | perm;
+		pml4e[pml4e_Index] = page2pa(page) | perm;
 	}
 	//pml4e entry with last 12 bits permissions
-	temp = pml4e[pml4eIndex];
+	pml4e_temp = pml4e[pml4e_Index];
 	//remove permission bits
-	temp = PTE_ADDR(temp);
+	pml4e_temp = PTE_ADDR(pml4e_temp);
 	//physical to virtual mapping
-	temp = (uint64_t)KADDR(temp);
+	pml4e_temp = (uint64_t)KADDR(pml4e_temp);
 	//increase pgtable index to get index pointer in page table
-	pml4eIndexPtr = (pte_t *)pdpe_walk((pte_t *)temp, va, create); 
+	pml4e_IndexPointer = (pte_t *)pdpe_walk((pte_t *)pml4e_temp, va, create); 
 	//Null check
-	if(pml4eIndexPtr == NULL && page != NULL)
+	if(pml4e_IndexPointer == NULL && page != NULL)
 	{
 		page_decref(page);
-        pml4e[pml4eIndex] = 0;
+        pml4e[pml4e_Index] = 0;
 	}
-	return pml4eIndexPtr;
+	return pml4e_IndexPointer;
 }
 
 
@@ -560,47 +558,44 @@ pml4e_walk(pml4e_t *pml4e, const void *va, int create)
 pte_t *
 pdpe_walk(pdpe_t *pdpe,const void *va,int create)
 {
-	//Need to return
-	pte_t * pdpeIndexPtr = NULL;
-	int pdpeIndex = 0;
-	int pgdirIndex = 0;
-	uint64_t temp;
+	pte_t * pdpe_IndexPointer = NULL;
+	int pdpe_Index = 0;
+	uint64_t pdpe_temp;
 	struct PageInfo * page = NULL;
 	if(pdpe == NULL)
 	{
 		return NULL;
 	}
-	pdpeIndex = PDPE(va);
-	if(!(uint64_t*)pdpe[pdpeIndex] && create == false)
+	pdpe_Index = PDPE(va);
+	if(!(uint64_t*)pdpe[pdpe_Index] && create == false)
 	{
 		return NULL;
 	}
-	else if((uint64_t*)pdpe[pdpeIndex] == NULL && create == true)
+	else if((uint64_t*)pdpe[pdpe_Index] == NULL && create == true)
 	{
 		int perm = PTE_W | PTE_U | PTE_P;	
 		struct PageInfo * page = page_alloc(ALLOC_ZERO);
 		if(!page)
 			return NULL;
 		page->pp_ref++;
-		pdpe[pdpeIndex] = page2pa(page) | perm;
+		pdpe[pdpe_Index] = page2pa(page) | perm;
 	}
 	//pdpe entry with last 12 bits permissions
-	temp = pdpe[pdpeIndex];
+	pdpe_temp = pdpe[pdpe_Index];
 	//remove permission bits
-	temp = PTE_ADDR(temp);
+	pdpe_temp = PTE_ADDR(pdpe_temp);
 	//physical to virtual mapping
-	temp = (uint64_t)KADDR(temp);
+	pdpe_temp = (uint64_t)KADDR(pdpe_temp);
 	//increase pgtable index to get index pointer in page table
-	pdpeIndexPtr = (pte_t *)pgdir_walk((pte_t *)temp, va, create);
+	pdpe_IndexPointer = (pte_t *)pgdir_walk((pte_t *)pdpe_temp, va, create);
 	//Null check
-	if(pdpeIndexPtr == NULL && page != NULL)
+	if(pdpe_IndexPointer == NULL && page != NULL)
 	{
         page_decref(page);
-        pdpe[pdpeIndex] = 0;
+        pdpe[pdpe_Index] = 0;
 	}
 	
-	//cprintf("Address is %x  value is %x \n", (uint64_t)KADDR(pdpe[pdpeIndex]), (uint64_t)KADDR(PTE_ADDR(pgdir[dirIndex])));
-	return pdpeIndexPtr;
+	return pdpe_IndexPointer;
 }
 // Given 'pgdir', a pointer to a page directory, pgdir_walk returns
 // a pointer to the page table entry (PTE). 
@@ -611,40 +606,38 @@ pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
 	// Fill this function in
-	//Need to return
-	pte_t * pgTblIndexPtr = NULL;
-	int dirIndex;
-	int pgTblIndex;
-	uint64_t temp;
+	pte_t * pgdir_IndexPointer = NULL;
+	int pdx_Index;
+	int ptx_Index;
+	uint64_t pgdir_temp;
 	if(pgdir == NULL)
 	{
 		return NULL;
 	}
-	dirIndex = PDX(va);
-	pgTblIndex = PTX(va);
-	if((uint64_t*)pgdir[dirIndex] == NULL && create == false)
+	pdx_Index = PDX(va);
+	ptx_Index = PTX(va);
+	if((uint64_t*)pgdir[pdx_Index] == NULL && create == false)
 	{
 		return NULL;
 	}
-	else if((uint64_t*)pgdir[dirIndex] == NULL && create == true)
+	else if((uint64_t*)pgdir[pdx_Index] == NULL && create == true)
 	{
 		int perm = PTE_W | PTE_U | PTE_P;	
 		struct PageInfo * page = page_alloc(ALLOC_ZERO);
 		if(!page)
 			return NULL;
 		page->pp_ref++;
-		pgdir[dirIndex] = page2pa(page) | perm;
+		pgdir[pdx_Index] = page2pa(page) | perm;
 	}
 	//pgdir entry with last 12 bits permissions
-	temp = pgdir[dirIndex];
+	pgdir_temp = pgdir[pdx_Index];
 	//remove permission bits
-	temp = PTE_ADDR(temp);
+	pgdir_temp = PTE_ADDR(pgdir_temp);
 	//physical to virtual mapping
-	temp = (uint64_t)KADDR(temp);
+	pgdir_temp = (uint64_t)KADDR(pgdir_temp);
 	//increase pgtable index to get index pointer in page table
-	pgTblIndexPtr = (pte_t *)temp + pgTblIndex;
-	//cprintf("Address is %x  value is %x \n", (uint64_t)KADDR((uint64_t)(pgdir + dirIndex)), (uint64_t)KADDR(PTE_ADDR(pgdir[dirIndex])));
-	return pgTblIndexPtr;
+	pgdir_IndexPointer = (pte_t *)pgdir_temp + ptx_Index;
+	return pgdir_IndexPointer;
 }
 
 //
@@ -663,7 +656,7 @@ boot_map_region(pml4e_t *pml4e, uintptr_t la, size_t size, physaddr_t pa, int pe
         // Fill this function in
 
         pte_t *pte_store = NULL;
-        pte_t * pgTblIndexPtr = NULL;
+        pte_t * pgdir_IndexPointer = NULL;
 
         int i = 0;
         if(pml4e == NULL)
@@ -673,13 +666,13 @@ boot_map_region(pml4e_t *pml4e, uintptr_t la, size_t size, physaddr_t pa, int pe
 
         for(; i < size / PGSIZE; i++)
         {
-        	pgTblIndexPtr = pml4e_walk(pml4e, (void *)la , 1);
-        	if(pgTblIndexPtr == NULL)
+        	pgdir_IndexPointer = pml4e_walk(pml4e, (void *)la , 1);
+        	if(pgdir_IndexPointer == NULL)
         	{
         		//cprintf("Error: could not bootmap");
         	    continue;
         	}
-            *pgTblIndexPtr = pa | perm;
+            *pgdir_IndexPointer = pa | perm;
             pa += PGSIZE;
             la += PGSIZE;
         }
@@ -716,23 +709,23 @@ int
 page_insert(pml4e_t *pml4e, struct PageInfo *pp, void *va, int perm)
 {
 	// Fill this function in
-	pte_t * pgTblIndexPtr;
+	pte_t * pgdir_IndexPointer;
 	if(pml4e == NULL || pp == NULL)
 	{
 		return 0;
 	}
 	
-	pgTblIndexPtr =  pml4e_walk(pml4e, va, 1);
-	if(pgTblIndexPtr == NULL)
+	pgdir_IndexPointer =  pml4e_walk(pml4e, va, 1);
+	if(pgdir_IndexPointer == NULL)
 	{
 		return 	-E_NO_MEM;
 	}
 	//set present bit
 	perm = perm|PTE_P;
-	bool present = *pgTblIndexPtr & PTE_P;
-	if(present && KADDR((uint64_t)*pgTblIndexPtr) == pp)
+	bool present = *pgdir_IndexPointer & PTE_P;
+	if(present && KADDR((uint64_t)*pgdir_IndexPointer) == pp)
 	{		
-		*pgTblIndexPtr = (page2pa(pp) | perm);
+		*pgdir_IndexPointer = (page2pa(pp) | perm);
 		return 0;
 	}
 	//check and remove previous existing page
@@ -744,7 +737,7 @@ page_insert(pml4e_t *pml4e, struct PageInfo *pp, void *va, int perm)
 	}
 
 	//add new page
-	*pgTblIndexPtr = (page2pa(pp) | perm);
+	*pgdir_IndexPointer = (page2pa(pp) | perm);
 
 	//increment reference
 	pp->pp_ref += 1;
@@ -767,7 +760,7 @@ struct PageInfo *
 page_lookup(pml4e_t *pml4e, void *va, pte_t **pte_store)
 {
 	// Fill this function in
-	pte_t * pgTblIndexPtr;
+	pte_t * pgdir_IndexPointer;
 	struct PageInfo * page = NULL;
 	bool present;
 
@@ -776,16 +769,16 @@ page_lookup(pml4e_t *pml4e, void *va, pte_t **pte_store)
 		return page;
 	}
 	
-	pgTblIndexPtr =  pml4e_walk(pml4e, va, 1);
-	if(pgTblIndexPtr == NULL)
+	pgdir_IndexPointer =  pml4e_walk(pml4e, va, 1);
+	if(pgdir_IndexPointer == NULL)
 		return page;
 	
-	if(*pgTblIndexPtr & PTE_P)
+	if(*pgdir_IndexPointer & PTE_P)
 	{
-		page = pa2page(*pgTblIndexPtr);				
+		page = pa2page(*pgdir_IndexPointer);				
 		if(pte_store)
 		{
-			*pte_store = pgTblIndexPtr;
+			*pte_store = pgdir_IndexPointer;
 		}
 	}
 	return page;
