@@ -10,6 +10,7 @@
 typedef int32_t envid_t;
 extern pml4e_t *boot_pml4e;
 extern physaddr_t boot_cr3;
+
 // An environment ID 'envid_t' has three parts:
 //
 // +1+---------------21-----------------+--------10--------+
