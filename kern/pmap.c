@@ -280,7 +280,7 @@ x64_vm_init(void)
     //////////////////////////////////////////////////////////////////////
     // Make 'envs' point to an array of size 'NENV' of 'struct Env'.
     // LAB 3: Your code here.
-
+    envs = (struct Env*) boot_alloc(NENV * sizeof(struct Env));
 
    
     //////////////////////////////////////////////////////////////////////
@@ -290,23 +290,6 @@ x64_vm_init(void)
     // particular, we can now map memory using boot_map_region or page_insert
     page_init();
 
-    //////////////////////////////////////////////////////////////////////
-    // Now we set up virtual memory 
-    //////////////////////////////////////////////////////////////////////
-    // Map 'pages' read-only by the user at linear address UPAGES
-    // Permissions:
-    //    - the new image at UPAGES -- kernel R, us/er R
-    //      (ie. perm = PTE_U | PTE_P)
-    //    - pages itself -- kernel RW, user NONE
-    // Your code goes here:
-
-    //////////////////////////////////////////////////////////////////////
-    // Map the 'envs' array read-only by the user at linear address UENVS
-    // (ie. perm = PTE_U | PTE_P).
-    // Permissions:
-    //    - the new image at UENVS  -- kernel R, user R
-    //    - envs itself -- kernel RW, user NONE
-    // LAB 3: Your code here.
 
     //////////////////////////////////////////////////////////////////////
     // Now we set up virtual memory 
@@ -318,6 +301,16 @@ x64_vm_init(void)
     //    - pages itself -- kernel RW, user NONE
     // Your code goes here:
     boot_map_region(pml4e, UPAGES, npages * sizeof(struct PageInfo), PADDR(pages), PTE_U|PTE_P);
+
+
+    //////////////////////////////////////////////////////////////////////
+    // Map the 'envs' array read-only by the user at linear address UENVS
+    // (ie. perm = PTE_U | PTE_P).
+    // Permissions:
+    //    - the new image at UENVS  -- kernel R, user R
+    //    - envs itself -- kernel RW, user NONE
+    // LAB 3: Your code here.
+    boot_map_region(pml4e, UENVS, NENV * sizeof(struct Env), PADDR(envs), PTE_U|PTE_P);
 
     //////////////////////////////////////////////////////////////////////
     // Use the physical memory that 'bootstack' refers to as the kernel
@@ -339,9 +332,9 @@ x64_vm_init(void)
     //      the PA range [0, npages*PGSIZE)
     // Permissions: kernel RW, user NONE
     // Your code goes here: 
-    // Check that the initial page directory has been set up correctly.
     boot_map_region(pml4e, KERNBASE, npages*PGSIZE, 0, PTE_W|PTE_P);
 
+    // Check that the initial page directory has been set up correctly.
     check_boot_pml4e(boot_pml4e);
 
     //////////////////////////////////////////////////////////////////////
