@@ -328,23 +328,23 @@ region_alloc(struct Env *e, void *va, size_t len)
 // for a user process.
 // This function is ONLY called during kernel initialization,
 // before running the first user-mode environment.
-//
+
 // This function loads all loadable segments from the ELF binary image
 // into the environment's user memory, starting at the appropriate
 // virtual addresses indicated in the ELF program header.
 // At the same time it clears to zero any portions of these segments
 // that are marked in the program header as being mapped
 // but not actually present in the ELF file - i.e., the program's bss section.
-//
+
 // All this is very similar to what our boot loader does, except the boot
 // loader also needs to read the code from disk.  Take a look at
 // boot/main.c to get ideas.
-//
+
 // Finally, this function maps one page for the program's initial stack.
 //
 // load_icode panics if it encounters problems.
 //  - How might load_icode fail?  What might be wrong with the given input?
-//
+
 void
 load_icode(struct Env *e, uint8_t *binary)
 {
@@ -359,19 +359,19 @@ load_icode(struct Env *e, uint8_t *binary)
     //  ph->p_va.  Any remaining memory bytes should be cleared to zero.
     //  (The ELF header should have ph->p_filesz <= ph->p_memsz.)
     //  Use functions from the previous lab to allocate and map pages.
-    //
+    
     //  All page protection bits should be user read/write for now.
     //  ELF segments are not necessarily page-aligned, but you can
     //  assume for this function that no two segments will touch
     //  the same virtual page.
-    //
+    
     //  You may find a function like region_alloc useful.
-    //
+    
     //  Loading the segments is much simpler if you can move data
     //  directly into the virtual addresses stored in the ELF binary.
     //  So which page directory should be in force during
     //  this function?
-    //
+   
     //  You must also do something with the program's entry point,
     //  to make sure that the environment starts executing there.
     //  What?  (See env_run() and env_pop_tf() below.)
@@ -380,7 +380,34 @@ load_icode(struct Env *e, uint8_t *binary)
     // Now map one page for the program's initial stack
     // at virtual address USTACKTOP - PGSIZE.
 
-    // LAB 3: Your code here.
+    struct Elf* elf = (struct Elf*) binary;
+    if (elf->e_magic != ELF_MAGIC) {
+	panic("env/load_icode: bad elf file");
+    } 
+
+    struct Proghdr* ph = (struct Proghdr*) (binary + elf->e_phoff);
+    struct Proghdr* eph = ph + elf->e_phnum;
+
+    // switch page directory to this env's
+    lcr3(PADDR(e->env_pml4e));
+
+    for (; ph < eph; ph++) {
+	if (ph->p_type == ELF_PROG_LOAD) {
+	    region_alloc(e, (void*)ph->p_va, ph->p_memsz);
+	    
+	    memcpy((void*) ph->p_va, binary + ph->p_offset, ph->p_filesz);
+	    memset((void*) ph->p_va + ph->p_filesz, 0, ph->p_memsz - ph->p_filesz);
+	}
+    }
+
+    // allocate 1 page for the program's stack
+    region_alloc(e, (void*) (USTACKTOP - PGSIZE), PGSIZE);
+
+    e->env_tf.tf_rip = elf->e_entry;
+    e->env_tf.tf_rsp = USTACKTOP;
+
+    lcr3(PADDR(boot_pml4e));
+
     e->elf = binary;
 }
 
