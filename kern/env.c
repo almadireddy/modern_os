@@ -207,6 +207,16 @@ env_setup_vm(struct Env *e)
 
     // LAB 3: Your code here.
 
+    p->pp_ref++;
+    e->env_pml4e = page2kva(p);
+    e->env_cr3 = page2pa(p);
+    
+    memset(e->env_pml4e, 0, PGSIZE);
+
+    // Apparently the first entry of boot_pml4e maps addresses above UTOP?
+    e->env_pml4e[1] = boot_pml4e[1];
+
+
     // UVPT maps the env's own page table read-only.
     // Permissions: kernel R, user R
     e->env_pml4e[PML4(UVPT)] = e->env_cr3 | PTE_P | PTE_U;
