@@ -275,12 +275,13 @@ x64_vm_init(void)
     // array.  'npages' is the number of physical pages in memory.
     // Your code goes here:
     pages = (struct PageInfo*)boot_alloc(npages * sizeof(struct PageInfo));
-
+    memset(pages, 0, npages * sizeof(struct PageInfo));
 
     //////////////////////////////////////////////////////////////////////
     // Make 'envs' point to an array of size 'NENV' of 'struct Env'.
     // LAB 3: Your code here.
     envs = (struct Env*) boot_alloc(NENV * sizeof(struct Env));
+    memset(envs, 0, sizeof(struct Env) * NENV);
 
    
     //////////////////////////////////////////////////////////////////////
@@ -388,6 +389,7 @@ page_init(void)
 
     size_t i, holeS, kernE, bootPTS, bootPTE;
     struct PageInfo* last = NULL;
+
     for (i = 0; i < npages; i++) {
 	pages[i].pp_ref = 0;
 	pages[i].pp_link = NULL;
@@ -397,6 +399,7 @@ page_init(void)
 	    page_free_list = &pages[i];
 	last = &pages[i];
     }
+
     //remove page 0 from page list
     page_free_list = page_free_list->pp_link;
 
@@ -434,7 +437,7 @@ page_alloc(int alloc_flags)
 	page->pp_link = NULL;
 	if(alloc_flags & ALLOC_ZERO)
 	{
-	    memset(page2kva(page), '\0', PGSIZE);
+	    memset(page2kva(page), 0, PGSIZE);
 	}
     }
     return page;
@@ -461,6 +464,7 @@ void insertAtBegining(struct PageInfo ** list, struct PageInfo * node)
     {
 	node->pp_link = *list;
 	*list = node;
+	node->pp_ref = 0;
     }
 }
 
@@ -525,7 +529,7 @@ page_decref(struct PageInfo* pp)
 // table, page directory,page directory pointer and pml4 entries.
 //
 
-    pte_t *
+pte_t *
 pml4e_walk(pml4e_t *pml4e, const void *va, int create)
 {
     pte_t * pml4e_IndexPointer = NULL;
@@ -536,6 +540,7 @@ pml4e_walk(pml4e_t *pml4e, const void *va, int create)
     {
 	return NULL;
     }
+
     pml4e_Index = PML4(va);
     if((uint64_t*)pml4e[pml4e_Index] == NULL && create == false)
     {
@@ -550,6 +555,7 @@ pml4e_walk(pml4e_t *pml4e, const void *va, int create)
 	page->pp_ref++;
 	pml4e[pml4e_Index] = page2pa(page) | perm;
     }
+
     //pml4e entry with last 12 bits permissions
     pml4e_temp = pml4e[pml4e_Index];
     //remove permission bits
