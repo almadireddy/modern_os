@@ -209,13 +209,14 @@ trap_dispatch(struct Trapframe *tf)
 	if (tf->tf_trapno == T_PGFLT) {
 	    page_fault_handler(tf);
 	    return;
-	} else if (tf->tf_trapno == T_BRKPT) {
+	} 
+	if (tf->tf_trapno == T_BRKPT) {
 	    print_trapframe(tf);
 	    monitor(tf);  
 	    return;
-	} else {
-	    print_trapframe(tf);
 	}
+
+	print_trapframe(tf);
 	
 	if (tf->tf_cs == GD_KT)
 		panic("unhandled trap in kernel");
