@@ -307,17 +307,16 @@ region_alloc(struct Env *e, void *va, size_t len)
     int success;
     struct PageInfo* p;
 
-    uintptr_t startVa = ROUNDDOWN((uintptr_t) va, PGSIZE);
-    uintptr_t endVa = ROUNDDOWN((uintptr_t) va + len, PGSIZE);
+    void* endVa = (uint8_t*) va + len;  // ROUNDUP((uintptr_t) va + len, PGSIZE);
 
-    while (startVa < endVa) {
+    while (va < endVa) {
 	p = page_alloc(0);
 	if (!p) panic("env/region_alloc: page_alloc failed!\n");
 
 	success = page_insert(e->env_pml4e, p, va, PTE_P | PTE_W | PTE_U);
 	if (success < 0) panic("env/region_alloc: could not insert page: %e\n", success);
 
-	startVa += PGSIZE; 
+	va = ROUNDDOWN((uint8_t*) va+PGSIZE, PGSIZE);  // += PGSIZE; 
     }
 }
 
