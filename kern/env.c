@@ -130,11 +130,9 @@ env_init(void)
     int i = 0;
     while (i < NENV) {
 	e = envs[i];
+
 	e.env_status = ENV_FREE;	
-	
-	if (i < 1023) {
-	    e.env_link = &envs[i+1];
-	}
+	e.env_link = &envs[i+1];
 
 	i++;
     }
@@ -404,7 +402,6 @@ load_icode(struct Env *e, uint8_t *binary)
     region_alloc(e, (void*) (USTACKTOP - PGSIZE), PGSIZE);
 
     e->env_tf.tf_rip = elf->e_entry;
-    e->env_tf.tf_rsp = USTACKTOP;
 
     lcr3(PADDR(boot_pml4e));
 

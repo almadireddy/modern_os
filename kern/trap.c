@@ -60,14 +60,65 @@ static const char *trapname(int trapno)
 }
 
 
+void tDivide();
+void tDebug();
+void tNmi();
+void tBreakpoint();
+void tOverflow();
+void tBoundCheck();
+void tIllegalOpcode();
+void tDeviceNotAvailable();
+void tDoubleFault();
+void tInvalidStackSegment();
+void tSegmentNotPresent();
+void tStackException();
+void tGeneralProtection();
+void tPageFault();
+void tFloatingPointError();
+void tAlignmentCheck();
+void tMachineCheck();
+void tSIMDError();
+void tSyscall();
+void tDefault();
+
 void
 trap_init(void)
 {
 	extern struct Segdesc gdt[];
 
 	// LAB 3: Your code here.
+	
+
+	int i = 0;
+	for (i = 0; i < sizeof(idt)/sizeof(idt[0]); i++)
+	    SETGATE(idt[i], 0, GD_KT, &tDefault, 0);
+	
+	SETGATE(idt[T_DIVIDE], 0, GD_KT, &tDivide, 0);	
+	SETGATE(idt[T_DEBUG], 0, GD_KT, &tDebug, 0);	
+	SETGATE(idt[T_NMI], 0, GD_KT, &tNmi, 0);	
+	SETGATE(idt[T_BRKPT], 0, GD_KT, &tBreakpoint, 1);	
+	SETGATE(idt[T_OFLOW], 0, GD_KT, &tOverflow, 0);	
+	SETGATE(idt[T_BOUND], 0, GD_KT, &tBoundCheck, 0);	
+	SETGATE(idt[T_ILLOP], 0, GD_KT, &tIllegalOpcode, 0);	
+	SETGATE(idt[T_DEVICE], 0, GD_KT, &tDeviceNotAvailable, 0);	
+	SETGATE(idt[T_DBLFLT], 0, GD_KT, &tDoubleFault, 0);	
+
+	SETGATE(idt[T_TSS], 0, GD_KT, &tInvalidStackSegment, 0);	
+	SETGATE(idt[T_SEGNP], 0, GD_KT, &tSegmentNotPresent, 0);	
+	SETGATE(idt[T_STACK], 0, GD_KT, &tStackException, 0);	
+	SETGATE(idt[T_GPFLT], 0, GD_KT, &tGeneralProtection, 0);	
+	SETGATE(idt[T_PGFLT], 0, GD_KT, &tPageFault, 0);	
+
+	SETGATE(idt[T_FPERR], 0, GD_KT, &tFloatingPointError, 0);	
+	SETGATE(idt[T_ALIGN], 0, GD_KT, &tAlignmentCheck, 0);	
+	SETGATE(idt[T_MCHK], 0, GD_KT, &tMachineCheck, 0);	
+	SETGATE(idt[T_SIMDERR], 0, GD_KT, &tSIMDError, 0);	
+	
+	SETGATE(idt[T_SYSCALL], 0, GD_KT, &tSyscall, 3);
+
 	idt_pd.pd_lim = sizeof(idt)-1;
 	idt_pd.pd_base = (uint64_t)idt;
+
 	// Per-CPU setup
 	trap_init_percpu();
 }
@@ -99,11 +150,14 @@ print_trapframe(struct Trapframe *tf)
 	cprintf("  es   0x----%04x\n", tf->tf_es);
 	cprintf("  ds   0x----%04x\n", tf->tf_ds);
 	cprintf("  trap 0x%08x %s\n", tf->tf_trapno, trapname(tf->tf_trapno));
+
 	// If this trap was a page fault that just happened
 	// (so %cr2 is meaningful), print the faulting linear address.
 	if (tf == last_tf && tf->tf_trapno == T_PGFLT)
 		cprintf("  cr2  0x%08x\n", rcr2());
+
 	cprintf("  err  0x%08x", tf->tf_err);
+
 	// For page faults, print decoded fault error code:
 	// U/K=fault occurred in user/kernel mode
 	// W/R=a write/read caused the fault
@@ -115,6 +169,7 @@ print_trapframe(struct Trapframe *tf)
 			tf->tf_err & 1 ? "protection" : "not-present");
 	else
 		cprintf("\n");
+
 	cprintf("  rip  0x%08x\n", tf->tf_rip);
 	cprintf("  cs   0x----%04x\n", tf->tf_cs);
 	cprintf("  flag 0x%08x\n", tf->tf_eflags);
@@ -152,6 +207,7 @@ trap_dispatch(struct Trapframe *tf)
 
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);
+	
 	if (tf->tf_cs == GD_KT)
 		panic("unhandled trap in kernel");
 	else {
