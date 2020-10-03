@@ -59,3 +59,5 @@
  *       for how to pass a pointer to the trapframe.
  */
 
+_alltraps:
+    call trap
