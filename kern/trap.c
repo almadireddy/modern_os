@@ -216,6 +216,22 @@ trap_dispatch(struct Trapframe *tf)
 	    return;
 	}
 
+	if (tf->tf_trapno == T_SYSCALL) {
+	    struct PushRegs r = tf->tf_regs;
+
+	    // From lib/syscall.h:
+	    // Syscall num in AX, 5 params in DX, CX, BX, DI, SI
+	    r.reg_rax = syscall(
+		    r.reg_rax, 
+		    r.reg_rdx,
+		    r.reg_rcx,
+		    r.reg_rbx,
+		    r.reg_rdi,
+		    r.reg_rsi);
+
+	    return;
+	}
+
 	print_trapframe(tf);
 	
 	if (tf->tf_cs == GD_KT)
