@@ -221,7 +221,7 @@ trap_dispatch(struct Trapframe *tf)
 
 	    // From lib/syscall.h:
 	    // Syscall num in AX, 5 params in DX, CX, BX, DI, SI
-	    r.reg_rax = syscall(
+	    tf->tf_regs.reg_rax = syscall(
 		    r.reg_rax, 
 		    r.reg_rdx,
 		    r.reg_rcx,
