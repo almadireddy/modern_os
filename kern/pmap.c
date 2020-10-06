@@ -892,6 +892,7 @@ user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 	while (va < endva) {
 	    ptep = pml4e_walk(env->env_pml4e, va, 0);
 
+	    // return error if any of the page table entries are lacking permissions.
 	    if (!ptep || (*ptep & (perm | PTE_P)) != (perm | PTE_P)) {
 		user_mem_check_addr = (uintptr_t) va;
 		return -E_FAULT;
