@@ -401,6 +401,7 @@ load_icode(struct Env *e, uint8_t *binary)
     region_alloc(e, (void*) (USTACKTOP - PGSIZE), PGSIZE);
 
     e->env_tf.tf_rip = elf->e_entry;
+    e->env_tf.tf_rsp = USTACKTOP;
 
     lcr3(PADDR(boot_pml4e));
 
