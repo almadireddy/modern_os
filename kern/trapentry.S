@@ -93,9 +93,6 @@ PUSHA
 movl $GD_KD, %eax
 movw %ax, %ds
 movw %ax, %es
-movw %ax, %ss
-movw %ax, %fs
-movw %ax, %gs
 movq %rsp,%rdi 
 call trap
 
