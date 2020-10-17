@@ -13,9 +13,11 @@
 #include <kern/monitor.h>
 #include <kern/macro.h>
 #include <kern/dwarf_api.h>
+#include <kern/sched.h>
+#include <kern/cpu.h>
+#include <kern/spinlock.h>
 
 struct Env *envs = NULL;		// All environments
-struct Env *curenv = NULL;		// The current env
 static struct Env *env_free_list;	// Free environment list
 // (linked by Env->env_link)
 
@@ -36,8 +38,7 @@ static struct Env *env_free_list;	// Free environment list
 // definition of gdt specifies the Descriptor Privilege Level (DPL)
 // of that descriptor: 0 for kernel and 3 for user.
 //
-
-struct Segdesc gdt[] =
+struct Segdesc gdt[2*NCPU + 5] =
 {
     // 0x0 - unused (always faults -- for trapping NULL far pointers)
 
@@ -234,56 +235,65 @@ env_setup_vm(struct Env *e)
 int
 env_alloc(struct Env **newenv_store, envid_t parent_id)
 {
-    int32_t generation;
-    int r;
-    struct Env *e;
+	int32_t generation;
+	int r;
+	struct Env *e;
 
-    if (!(e = env_free_list))
-	return -E_NO_FREE_ENV;
+	if (!(e = env_free_list))
+		return -E_NO_FREE_ENV;
 
-    // Allocate and set up the page directory for this environment.
-    if ((r = env_setup_vm(e)) < 0)
-	return r;
+	// Allocate and set up the page directory for this environment.
+	if ((r = env_setup_vm(e)) < 0)
+		return r;
 
-    // Generate an env_id for this environment.
-    generation = (e->env_id + (1 << ENVGENSHIFT)) & ~(NENV - 1);
-    if (generation <= 0)	// Don't create a negative env_id.
-	generation = 1 << ENVGENSHIFT;
-    e->env_id = generation | (e - envs);
+	// Generate an env_id for this environment.
+	generation = (e->env_id + (1 << ENVGENSHIFT)) & ~(NENV - 1);
+	if (generation <= 0)	// Don't create a negative env_id.
+		generation = 1 << ENVGENSHIFT;
+	e->env_id = generation | (e - envs);
 
-    // Set the basic status variables.
-    e->env_parent_id = parent_id;
-    e->env_type = ENV_TYPE_USER;
-    e->env_status = ENV_RUNNABLE;
-    e->env_runs = 0;
+	// Set the basic status variables.
+	e->env_parent_id = parent_id;
+	e->env_type = ENV_TYPE_USER;
+	e->env_status = ENV_RUNNABLE;
+	e->env_runs = 0;
 
-    // Clear out all the saved register state,
-    // to prevent the register values
-    // of a prior environment inhabiting this Env structure
-    // from "leaking" into our new environment.
-    memset(&e->env_tf, 0, sizeof(e->env_tf));
+	// Clear out all the saved register state,
+	// to prevent the register values
+	// of a prior environment inhabiting this Env structure
+	// from "leaking" into our new environment.
+	memset(&e->env_tf, 0, sizeof(e->env_tf));
 
-    // Set up appropriate initial values for the segment registers.
-    // GD_UD is the user data segment selector in the GDT, and
-    // GD_UT is the user text segment selector (see inc/memlayout.h).
-    // The low 2 bits of each segment register contains the
-    // Requestor Privilege Level (RPL); 3 means user mode.  When
-    // we switch privilege levels, the hardware does various
-    // checks involving the RPL and the Descriptor Privilege Level
-    // (DPL) stored in the descriptors themselves.
-    e->env_tf.tf_ds = GD_UD | 3;
-    e->env_tf.tf_es = GD_UD | 3;
-    e->env_tf.tf_ss = GD_UD | 3;
-    e->env_tf.tf_rsp = USTACKTOP;
-    e->env_tf.tf_cs = GD_UT | 3;
-    // You will set e->env_tf.tf_rip later.
+	// Set up appropriate initial values for the segment registers.
+	// GD_UD is the user data segment selector in the GDT, and
+	// GD_UT is the user text segment selector (see inc/memlayout.h).
+	// The low 2 bits of each segment register contains the
+	// Requestor Privilege Level (RPL); 3 means user mode.  When
+	// we switch privilege levels, the hardware does various
+	// checks involving the RPL and the Descriptor Privilege Level
+	// (DPL) stored in the descriptors themselves.
+	e->env_tf.tf_ds = GD_UD | 3;
+	e->env_tf.tf_es = GD_UD | 3;
+	e->env_tf.tf_ss = GD_UD | 3;
+	e->env_tf.tf_rsp = USTACKTOP;
+	e->env_tf.tf_cs = GD_UT | 3;
+	// You will set e->env_tf.tf_rip later.
 
-    // commit the allocation
-    env_free_list = e->env_link;
-    *newenv_store = e;
+	// Enable interrupts while in user mode.
+	// LAB 4: Your code here.
 
-    cprintf("[%08x] new env %08x\n", curenv ? curenv->env_id : 0, e->env_id);
-    return 0;
+	// Clear the page fault handler until user installs one.
+	e->env_pgfault_upcall = 0;
+
+	// Also clear the IPC receiving flag.
+	e->env_ipc_recving = 0;
+
+	// commit the allocation
+	env_free_list = e->env_link;
+	*newenv_store = e;
+
+	cprintf("[%08x] new env %08x\n", curenv ? curenv->env_id : 0, e->env_id);
+	return 0;
 }
 
 //
@@ -503,15 +513,25 @@ env_free(struct Env *e)
 
 //
 // Frees environment e.
+// If e was the current env, then runs a new environment (and does not return
+// to the caller).
 //
 void
 env_destroy(struct Env *e)
 {
+	// If e is currently running on other CPUs, we change its state to
+	// ENV_DYING. A zombie environment will be freed the next time
+	// it traps to the kernel.
+	if (e->env_status == ENV_RUNNING && curenv != e) {
+		e->env_status = ENV_DYING;
+		return;
+	}
 
-    env_free(e);
-    cprintf("Destroyed the only environment - nothing more to do!\n");
-    while (1)
-	monitor(NULL);
+	env_free(e);
+	if (curenv == e) {
+		curenv = NULL;
+		sched_yield();
+	}
 }
 
 
@@ -524,15 +544,17 @@ env_destroy(struct Env *e)
 void
 env_pop_tf(struct Trapframe *tf)
 {
-    __asm __volatile("movq %0,%%rsp\n"
-	    POPA
-	    "movw (%%rsp),%%es\n"
-	    "movw 8(%%rsp),%%ds\n"
-	    "addq $16,%%rsp\n"
-	    "\taddq $16,%%rsp\n" /* skip tf_trapno and tf_errcode */
-	    "\tiretq"
-	    : : "g" (tf) : "memory");
-    panic("iret failed");  /* mostly to placate the compiler */
+	// Record the CPU we are running on for user-space debugging
+	curenv->env_cpunum = cpunum();
+	__asm __volatile("movq %0,%%rsp\n"
+			 POPA
+			 "movw (%%rsp),%%es\n"
+			 "movw 8(%%rsp),%%ds\n"
+			 "addq $16,%%rsp\n"
+			 "\taddq $16,%%rsp\n" /* skip tf_trapno and tf_errcode */
+			 "\tiretq"
+			 : : "g" (tf) : "memory");
+	panic("iret failed");  /* mostly to placate the compiler */
 }
 
 //
