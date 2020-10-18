@@ -1275,6 +1275,7 @@ page_check(void)
     pde_t *pde;
     void *va;
     int i;
+    uintptr_t mm1, mm2;
     pp0 = pp1 = pp2 = pp3 = pp4 = pp5 =0;
     assert(pp0 = page_alloc(0));
     assert(pp1 = page_alloc(0));
