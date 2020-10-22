@@ -439,11 +439,22 @@ page_init(void)
     for (i = 0; i < npages; i++) {
 	pages[i].pp_ref = 0;
 	pages[i].pp_link = NULL;
-	if(last)
-	    last->pp_link = &pages[i];
-	else
-	    page_free_list = &pages[i];
-	last = &pages[i];
+	
+	uint64_t va = KERNBASE + (i * PGSIZE);
+
+	if (i == MPENTRY_PADDR / PGSIZE) {
+	    pages[i].pp_ref = 1;
+	} else if (va >= BOOT_PAGE_TABLE_START && va < BOOT_PAGE_TABLE_END) {
+	    pages[i].pp_ref = 1;
+	} else {
+	    if(last)
+		last->pp_link = &pages[i];
+	    else
+		page_free_list = &pages[i];
+
+	    last = &pages[i];
+	}
+
     }
 
     //remove page 0 from page list
