@@ -300,6 +300,10 @@ syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, 
 	    case SYS_cgetc:
 		return sys_cgetc();
 
+	    case SYS_yield:
+		sys_yield();
+		break;
+
 	    default:
 		return -E_NO_SYS;
 	}

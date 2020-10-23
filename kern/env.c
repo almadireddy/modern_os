@@ -124,21 +124,18 @@ env_init(void)
     // Set up envs array
     // LAB 3: Your code here.
 
-    struct Env e; 
-
-    cprintf("Marking all envs as free\n");
+    cprintf("env/env_init: Marking all envs as free\n");
 
     int i = 0;
     while (i < NENV) {
-	e = envs[i];
-
-	e.env_status = ENV_FREE;	
-	e.env_link = &envs[i+1];
+	envs[i].env_status = ENV_FREE;
+	envs[i].env_link = &envs[i+1];
 
 	i++;
     }
 
-    env_free_list = envs;
+    envs[NENV-1].env_link = NULL;
+    env_free_list = &envs[0];
 
     // Per-CPU part of the initialization
     env_init_percpu();
@@ -433,7 +430,14 @@ env_create(uint8_t *binary, enum EnvType type)
     struct Env* e;
     int success = env_alloc(&e, 0);
     
-    if (success < 0) panic("env/env_create: failed to allocate env");
+    if (success < 0) {
+	    if (success == -E_NO_FREE_ENV)
+		panic("env/env_create: failed to allocate env - E_NO_FREE_ENV\n");
+	    else if (success == -E_NO_MEM)
+		panic("env/env_create: failed to allocate env - E_NO_MEM\n");
+	    else 
+		panic("env/env_create: failed to allocate env\n");
+    }
 
     load_icode(e, binary);
     e->env_type = type;

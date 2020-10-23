@@ -212,7 +212,7 @@ boot_alloc(uint32_t n)
     // to any kernel code or global variables.
     if (!nextfree) {
 	extern uintptr_t end_debug;
-	nextfree = ROUNDUP((char *) end_debug, PGSIZE);
+	nextfree = ROUNDUP((char *) end, PGSIZE);
     }
 
     // Allocate a chunk large enough to hold 'n' bytes, then update
