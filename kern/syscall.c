@@ -190,9 +190,9 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 	
 	struct PageInfo *pp;
 	pte_t *pte_store;
-
 	int result = 0;
 	struct Env *env_store;
+
 	result = envid2env(envid, &env_store, 1);
 
 	if (result < 0) {
@@ -203,7 +203,7 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 		return -E_INVAL;
 	}
 
-	if ( (perm & ~PTE_SYSCALL) || (~perm & (PTE_U | PTE_P) )) {
+	if ( (perm & ~PTE_SYSCALL) || (~perm & (PTE_U | PTE_P)) ) {
 		return -E_INVAL;
 	}
 
@@ -220,7 +220,6 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 	}
 
 	return 0;
-	//panic("sys_page_alloc not implemented");
 }
 
 // Map the page of memory at 'srcva' in srcenvid's address space
@@ -262,6 +261,7 @@ sys_page_map(envid_t srcenvid, void *srcva,
 
 	if (srcva >= (void*) UTOP || dstva >= (void*) UTOP)
 		return -E_INVAL;
+	
 	if (srcva != ROUNDDOWN(srcva, PGSIZE) || dstva != ROUNDDOWN(dstva, PGSIZE))
 		return -E_INVAL;
 
@@ -281,7 +281,6 @@ sys_page_map(envid_t srcenvid, void *srcva,
 		return -E_INVAL;
 	}
 
-
 	pp = page_lookup(srcenv_store->env_pml4e, srcva, &pte_store);
 
 	if (pp == 0 || (!(*pte_store & PTE_W) && (perm & PTE_W))) {
@@ -289,6 +288,8 @@ sys_page_map(envid_t srcenvid, void *srcva,
 	}
 	
 	result = page_insert(dstenv_store->env_pml4e, pp, dstva, perm);
+
+	if (result < 0) return result;
 
 	return 0;
 	//panic("sys_page_map not implemented");
