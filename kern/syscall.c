@@ -92,18 +92,17 @@ sys_exofork(void)
 	// LAB 4: Your code here.
 	
 	struct Env *newenv_store;
-	uint32_t result = 0;
-	result = env_alloc(&newenv_store, curenv->env_id);
+	int result = env_alloc(&newenv_store, curenv->env_id);
 
-	if(result != 0){
-		return result;
+	if (result < 0) {
+	    return result;
 	}
 
 	newenv_store->env_status = ENV_NOT_RUNNABLE;
 	newenv_store->env_tf = curenv->env_tf;
-	newenv_store->env_tf.tf_regs.reg_rax = 0x00;
+	newenv_store->env_tf.tf_regs.reg_rax = 0;
+	
 	return newenv_store->env_id;
-	//panic("sys_exofork not implemented");
 }
 
 // Set envid's env_status to status, which must be ENV_RUNNABLE
@@ -124,23 +123,25 @@ sys_env_set_status(envid_t envid, int status)
 
 	// LAB 4: Your code here.
 	
-	if(!envid){
+	if (!envid) {
 		return -E_BAD_ENV;
 	}
 	
-	uint32_t result = 0;
+	int result = 0;
 	struct Env *env_store;
 	result = envid2env(envid, &env_store, 1);
 
-	if(result != 0){
+	if (result < 0) {
 		return result;
 	}
-	if(status < 0 || status > 4){
+
+	if (status != ENV_NOT_RUNNABLE && status != ENV_RUNNABLE) {
 		return -E_INVAL;
 	}
 
 	env_store->env_status = status;
-	return result;
+
+	return 0;
 	//panic("sys_env_set_status not implemented");
 }
 
@@ -187,34 +188,38 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 
 	// LAB 4: Your code here.
 	
-	if(!envid){
-		return -E_BAD_ENV;
-	}
-	
 	struct PageInfo *pp;
 	pte_t *pte_store;
 
-	uint32_t result = 0;
+	int result = 0;
 	struct Env *env_store;
 	result = envid2env(envid, &env_store, 1);
 
-	if(result != 0){
+	if (result < 0) {
 		return result;
 	}
-	if (((uint64_t)va >= UTOP)||((uint64_t)va % PGSIZE != 0)){
-		return -E_INVAL;
-	}
-	if((perm > PTE_SYSCALL) || ((perm & (PTE_U | PTE_P)) != (PTE_U | PTE_P))){
+
+	if (va >= (void *) UTOP) {
 		return -E_INVAL;
 	}
 
-	pp = page_alloc(0);
-	if(!pp){
+	if ( (perm & ~PTE_SYSCALL) || (~perm & (PTE_U | PTE_P) )) {
+		return -E_INVAL;
+	}
+
+	pp = page_alloc(ALLOC_ZERO);
+	if (!pp) {
 		return -E_NO_MEM;
 	}
 
-	result = page_insert(env_store->env_pml4e, pp, va, perm|PTE_P);
-	return result;
+	result = page_insert(env_store->env_pml4e, pp, va, perm);
+
+	if (result < 0) {
+	    page_free(pp);
+	    return result;
+	}
+
+	return 0;
 	//panic("sys_page_alloc not implemented");
 }
 
@@ -247,9 +252,6 @@ sys_page_map(envid_t srcenvid, void *srcva,
 
 	// LAB 4: Your code here.
 	
-	if(!srcenvid || !dstenvid){
-		return -E_BAD_ENV;
-	}
 
 	uint32_t result = 0;
 	struct Env *srcenv_store;
@@ -258,35 +260,37 @@ sys_page_map(envid_t srcenvid, void *srcva,
 	struct PageInfo *pp;
 	pte_t *pte_store;
 
+	if (srcva >= (void*) UTOP || dstva >= (void*) UTOP)
+		return -E_INVAL;
+	if (srcva != ROUNDDOWN(srcva, PGSIZE) || dstva != ROUNDDOWN(dstva, PGSIZE))
+		return -E_INVAL;
+
 	result = envid2env(srcenvid, &srcenv_store, 1);
 
-	if(result != 0){
+	if (result < 0) {
 		return result;
 	}
 
 	result = envid2env(dstenvid, &dstenv_store, 1);
 
-	if(result != 0){
+	if (result < 0) {
 		return result;
 	}
 
-	if(perm > (PTE_U | PTE_P | PTE_AVAIL | PTE_W) || perm < (PTE_U | PTE_P)){
+	if ((~perm & (PTE_U|PTE_P)) || (perm & ~PTE_SYSCALL)) {
 		return -E_INVAL;
 	}
 
-	if(((uint64_t)dstva % PGSIZE !=0 || (uint64_t)dstva > UTOP)||((uint64_t)srcva % PGSIZE !=0 || (uint64_t)srcva > UTOP)){
-		return -E_INVAL;
-	}
 
 	pp = page_lookup(srcenv_store->env_pml4e, srcva, &pte_store);
 
-	if(NULL == pp || (((*(pte_store) & PTE_W) == 0) && (perm & PTE_W) != 0)){
-
+	if (pp == 0 || (!(*pte_store & PTE_W) && (perm & PTE_W))) {
 		return -E_INVAL;
 	}
 	
 	result = page_insert(dstenv_store->env_pml4e, pp, dstva, perm);
-	return result;
+
+	return 0;
 	//panic("sys_page_map not implemented");
 }
 
@@ -308,7 +312,8 @@ sys_page_unmap(envid_t envid, void *va)
 	if(envid2env(envid, &env, 1) != 0){
 		return -E_BAD_ENV;
 	}
-	if(va == NULL || (uint64_t)va >= UTOP ||(uint64_t)va % PGSIZE != 0){
+
+	if (va >= (void*) UTOP || PGOFF(va)) {
 		return -E_INVAL;
 	}
 	page_remove(env->env_pml4e, va);
@@ -414,6 +419,21 @@ syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, 
 	    case SYS_yield:
 		sys_yield();
 		break;
+
+	    case SYS_exofork:
+		return sys_exofork();
+
+	    case SYS_env_set_status:
+		return sys_env_set_status((envid_t) a1, (int) a2);
+		
+	    case SYS_page_alloc:
+		return sys_page_alloc((envid_t) a1, (void *) a2, (int) a3);
+
+	    case SYS_page_map:
+		return sys_page_map((envid_t) a1, (void *) a2, (envid_t) a3, (void *) a4, (int) a5);
+
+	    case SYS_page_unmap:
+		return sys_page_unmap((envid_t) a1, (void *) a2);
 
 	    default:
 		return -E_NO_SYS;
