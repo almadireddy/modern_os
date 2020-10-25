@@ -406,10 +406,41 @@ page_fault_handler(struct Trapframe *tf)
 
 	// LAB 4: Your code here.
 
-	// Destroy the environment that caused the fault.
-	cprintf("[%08x] user fault va %08x ip %08x\n",
-		curenv->env_id, fault_va, tf->tf_rip);
-	print_trapframe(tf);
-	env_destroy(curenv);
+	if (curenv->env_pgfault_upcall == 0) {
+	    // Destroy the environment that caused the fault.
+	    cprintf("[%08x] user fault va %08x ip %08x\n",
+		    curenv->env_id, fault_va, tf->tf_rip);
+	    print_trapframe(tf);
+	    env_destroy(curenv);
+	}
+
+	struct UTrapframe *utf;
+
+	// if the exception stack frame already exists on the 
+	// exception stack, then push a new one, preserving the old 
+	// one. Otherwise, it's the first one, so just push it on
+	// top of the exception stack
+	if (tf->tf_rsp >= USTACKTOP - PGSIZE && tf->tf_rsp < USTACKTOP) {
+	    utf = (struct UTrapframe*) (tf->tf_rsp - sizeof(struct UTrapframe) - 8);
+	}
+	else {
+	    utf = (struct UTrapframe*) (UXSTACKTOP - sizeof(struct UTrapframe));
+	}
+
+	// make sure we can write to the exception stack
+	user_mem_assert(curenv, utf, sizeof(struct UTrapframe), PTE_U | PTE_W);
+
+	utf->utf_fault_va = fault_va;
+	utf->utf_err = tf->tf_err;
+	utf->utf_regs = tf->tf_regs;
+	utf->utf_rip = tf->tf_rip;
+	utf->utf_eflags = tf->tf_eflags;
+	utf->utf_rsp = tf->tf_rsp;
+
+	// with this, env_run will switch to the specified fault handler
+	tf->tf_rsp = (uintptr_t) utf;
+	tf->tf_rip = (uintptr_t) curenv->env_pgfault_upcall;
+
+	env_run(curenv);
 }
 
