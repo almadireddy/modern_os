@@ -68,17 +68,34 @@ call *%rax
 //
 // LAB 4: Your code here.
 
-    // Restore the trap-time registers.  After you do this, you
-    // can no longer modify any general-purpose registers.
-    // LAB 4: Your code here.
+subq $8, 152(%rsp)
+movq 152(%rsp), %rax
+movq 136(%rsp), %rbx
+movq %rbx, (%rax)
 
-    // Restore eflags from the stack.  After you do this, you can
-    // no longer use arithmetic operations or anything else that
-    // modifies eflags.
-    // LAB 4: Your code here.
+// Restore the trap-time registers.  After you do this, you
+// can no longer modify any general-purpose registers.
+// LAB 4: Your code here.
 
-    // Switch back to the adjusted trap-time stack.
-    // LAB 4: Your code here.
+addq $16, %rsp
+POPA_
 
-    // Return to re-execute the instruction that faulted.
-    // LAB 4: Your code here.
+// Restore eflags from the stack.  After you do this, you can
+// no longer use arithmetic operations or anything else that
+// modifies eflags.
+// LAB 4: Your code here.
+
+pushq 8(%rsp)
+popfq
+
+// Switch back to the adjusted trap-time stack.
+// LAB 4: Your code here.
+
+movq 16(%rsp), %rsp
+
+// Return to re-execute the instruction that faulted.
+// LAB 4: Your code here.
+
+retq
+
+
