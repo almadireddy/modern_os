@@ -16,7 +16,7 @@ pgfault(struct UTrapframe *utf)
 {
 	void *addr = (void *) utf->utf_fault_va;
 	uint32_t err = utf->utf_err;
-	//int r; why is this here again?
+	int r;
 
 	// Check that the faulting access was (1) a write, and (2) to a
 	// copy-on-write page.  If not, panic.
@@ -47,24 +47,24 @@ pgfault(struct UTrapframe *utf)
 	// LAB 4: Your code here.
 
 	void *page_addr;
-	if(sys_page_alloc(0, (void*)PFTEMP, PTE_USER) == 0){
+	if((r = sys_page_alloc(0, (void*)PFTEMP, PTE_USER)) == 0){
 		
 		page_addr = ROUNDDOWN(addr, PGSIZE);
 		memmove(PFTEMP, page_addr, PGSIZE);
 
-		if(sys_page_map(0, PFTEMP, 0,page_addr, PTE_USER) < 0){
+		if((r = sys_page_map(0, PFTEMP, 0,page_addr, PTE_USER)) < 0){
 			
-			panic("sys_page_map has failed at PFTEMP");
+			panic("sys_page_map has failed at PFTEMP: %e",r);
 		
 		}
-		if(sys_page_unmap(0, PFTEMP) < 0){
+		if((r = sys_page_unmap(0, PFTEMP)) < 0){
 
-			panic("sys_page_unmap has failed at PFTEMP");
+			panic("sys_page_unmap has failed at PFTEMP: %e",r);
 		}
 
 	}else {
 		
-		panic("sys_page_alloc failed during page_fault");
+		panic("sys_page_alloc failed during page_fault: %e",r);
 
 	}
 	
@@ -85,7 +85,7 @@ pgfault(struct UTrapframe *utf)
 static int
 duppage(envid_t envid, unsigned pn)
 {
-	//int r; better off renaming as perm
+	int r;
 
 	// LAB 4: Your code here.
 	
@@ -96,22 +96,22 @@ duppage(envid_t envid, unsigned pn)
 
 		perm = ((perm | (PTE_P|PTE_U|PTE_COW)) &(~PTE_W));
 
-		if(sys_page_map(0, addr, envid, addr, perm) < 0){
+		if((r = sys_page_map(0, addr, envid, addr, perm)) < 0){
 			
-			panic("sys_page_map has failed with PTE_COW");
+			panic("sys_page_map has failed with PTE_COW: %e",r);
 		
 		}
-		if(sys_page_map(0, addr, 0, addr, perm) < 0){
+		if((r = sys_page_map(0, addr, 0, addr, perm)) < 0){
 		
-			panic("sys_page_map has failed with PTE_COW");
+			panic("sys_page_map has failed with PTE_COW: %e",r);
 		
 		}
 
 	} else{
 
-		if(sys_page_map(0, addr, envid, addr, perm) < 0){
+		if((r = sys_page_map(0, addr, envid, addr, perm)) < 0){
 			
-			panic("sys_page_map has failed with PTE_COW");
+			panic("sys_page_map has failed with PTE_COW: %e",r);
 		
 		}
 		
@@ -184,18 +184,19 @@ fork(void)
 
 		}
 	}
-
-	if (sys_env_set_pgfault_upcall(envid, (void*)_pgfault_upcall) < 0){
+	
+	int r;
+	if ((r = sys_env_set_pgfault_upcall(envid, (void*)_pgfault_upcall)) < 0){
 		
-		panic("sys_env_set_pgfault has failed.");
+		panic("sys_env_set_pgfault has failed: %e",r);
 	}
-	if (sys_page_alloc(envid, (void*)UXSTACKTOP - PGSIZE, PTE_USER) < 0){
+	if ((r = sys_page_alloc(envid, (void*)UXSTACKTOP - PGSIZE, PTE_USER)) < 0){
 		
-		panic("sys_page_alloc has failed.");
+		panic("sys_page_alloc has failed: %e",r);
 	}
-	if (sys_env_set_status(envid, ENV_RUNNABLE)){
+	if ((r = sys_env_set_status(envid, ENV_RUNNABLE)) < 0){
 
-		panic("sys_env_set_status has failed.");
+		panic("sys_env_set_status has failed: %e",r);
 	}
 
 	return envid;
@@ -203,8 +204,6 @@ fork(void)
 
 	//panic("fork not implemented");
 }
-
-//function created to implement asm and retrieve esp
 
 // Challenge!
 int
