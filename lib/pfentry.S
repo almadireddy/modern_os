@@ -68,9 +68,14 @@ call *%rax
 //
 // LAB 4: Your code here.
 
+// decrement trap rsp by 8
 subq $8, 152(%rsp)
+
+// get trap time %rsp into %rax and %rip into %rbx 
 movq 152(%rsp), %rax
 movq 136(%rsp), %rbx
+
+// move trap time %rip into mem location at trap time %rsp
 movq %rbx, (%rax)
 
 // Restore the trap-time registers.  After you do this, you
