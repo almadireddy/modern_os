@@ -411,7 +411,6 @@ page_init(void)
 	// is constructed
 	// NB: Remember to mark the memory used for initial boot page table i.e (va>=BOOT_PAGE_TABLE_START && va < BOOT_PAGE_TABLE_END) as in-use (not free)
 	size_t i;
-	uint64_t kva;
 	struct PageInfo* last = NULL;
 
 	for (i = npages - 1; i > 0; i--) {

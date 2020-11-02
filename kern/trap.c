@@ -75,29 +75,29 @@ trap_init(void)
 	// LAB 3: Your code here.
 
 	// declarations of trap handlers
-	extern void __trap_divide();
-	extern void __trap_debug();
-	extern void __trap_nmi();
-	extern void __trap_brkpt();
-	extern void __trap_oflow();
-	extern void __trap_bound();
-	extern void __trap_illop();
-	extern void __trap_device();
-	extern void __trap_dblflt();
-	//extern void __trap_coproc();
-	extern void __trap_tss();
-	extern void __trap_segnp();
-	extern void __trap_stack();
-	extern void __trap_gpflt();
-	extern void __trap_pgflt();
-	//extern void __trap_res();
-	extern void __trap_fperr();
-	extern void __trap_align();
-	extern void __trap_mchk();
-	extern void __trap_simderr();
-	extern void __trap_syscall();
+	extern void __trap_divide(); 	//T_DIVIDE
+	extern void __trap_debug(); 	//T_DEBUG
+	extern void __trap_nmi(); 	//T_NMI
+	extern void __trap_brkpt(); 	//T_BRKPT
+	extern void __trap_oflow();	//T_OFLOW
+	extern void __trap_bound();	//T_BOUND
+	extern void __trap_illop();	//T_ILLOP
+	extern void __trap_device(); 	//T_DEVICE
+	extern void __trap_dblflt(); 	//T_DBLFLT
+	
+	extern void __trap_tss(); 	//T_TSS
+	extern void __trap_segnp(); 	//T_SEGNP
+	extern void __trap_stack(); 	//T_STACK
+	extern void __trap_gpflt(); 	//T_GPFLT
+	extern void __trap_pgflt(); 	//T_PGFLT
+	
+	extern void __trap_fperr(); 	//T_FPERR
+	extern void __trap_align(); 	//T_ALIGN
+	extern void __trap_mchk(); 	//T_MCHK
+	extern void __trap_simderr(); 	//T_SIMDERR
+	extern void __trap_syscall(); 	//T_SYSCAL
 
-	// set gate descriptors - LAB4 version
+	// set gate descriptors - Modified for LAB 4
 	SETGATE(idt[T_DIVIDE], 0, GD_KT, __trap_divide, 0);
 	SETGATE(idt[T_DEBUG], 0, GD_KT, __trap_debug, 0);
 	SETGATE(idt[T_NMI], 0, GD_KT, __trap_nmi, 0);
@@ -107,27 +107,28 @@ trap_init(void)
 	SETGATE(idt[T_ILLOP], 0, GD_KT, __trap_illop, 0);
 	SETGATE(idt[T_DEVICE], 0, GD_KT, __trap_device, 0);
 	SETGATE(idt[T_DBLFLT], 0, GD_KT, __trap_dblflt, 0);
-	//SETGATE(idt[T_COPROC], 0, GD_KT, __trap_coproc, 0);
+	
 	SETGATE(idt[T_TSS], 0, GD_KT, __trap_tss, 0);
 	SETGATE(idt[T_SEGNP], 0, GD_KT, __trap_segnp, 0);
 	SETGATE(idt[T_STACK], 0, GD_KT, __trap_stack, 0);
 	SETGATE(idt[T_GPFLT], 0, GD_KT, __trap_gpflt, 0);
 	SETGATE(idt[T_PGFLT], 0, GD_KT, __trap_pgflt, 0);
-	//SETGATE(idt[T_RES], 0, GD_KT, __trap_res, 0);
+	
 	SETGATE(idt[T_FPERR], 0, GD_KT, __trap_fperr, 0);
 	SETGATE(idt[T_ALIGN], 0, GD_KT, __trap_align, 0);
 	SETGATE(idt[T_MCHK], 0, GD_KT, __trap_mchk, 0);
 	SETGATE(idt[T_SIMDERR], 0, GD_KT, __trap_simderr, 0);
 	SETGATE(idt[T_SYSCALL], 0, GD_KT, __trap_syscall, 3);
 
-	// note: code below is added for LAB4
-	extern void __irq_timer();
-	extern void __irq_kbd();
-	extern void __irq_serial();
-	extern void __irq_spurious();
-	extern void __irq_ide();
-	extern void __irq_error();
+	// trap handlers added for LAB 4
+	extern void __irq_timer(); 	//IRQ_TIMER
+	extern void __irq_kbd(); 	//IRQ_KBD
+	extern void __irq_serial(); 	//IRQ_SERIAL
+	extern void __irq_spurious(); 	//IRQ_SPURIOUS
+	extern void __irq_ide(); 	//IRQ_IDE
+	extern void __irq_error(); 	//IRQ_ERROR
 
+	// gate descripters added for LAB 4
 	SETGATE(idt[IRQ_OFFSET + IRQ_TIMER], 0, GD_KT, __irq_timer, 0);
 	SETGATE(idt[IRQ_OFFSET + IRQ_KBD], 0, GD_KT, __irq_kbd, 0);
 	SETGATE(idt[IRQ_OFFSET + IRQ_SERIAL], 0, GD_KT, __irq_serial, 0);
@@ -135,34 +136,9 @@ trap_init(void)
 	SETGATE(idt[IRQ_OFFSET + IRQ_IDE], 0, GD_KT, __irq_ide, 0);
 	SETGATE(idt[IRQ_OFFSET + IRQ_ERROR], 0, GD_KT, __irq_error, 0);
 
-	/*
-	// note: not sure what happened here but must modify to LAB4 version
-	// set gate descriptors: see IA-32 Manual Table 5-1
-	SETGATE(idt[T_DIVIDE], 1, GD_KT, __trap_divide, 0);
-	SETGATE(idt[T_DEBUG], 1, GD_KT, __trap_debug, 0);
-	SETGATE(idt[T_NMI], 0, GD_KT, __trap_nmi, 0);
-	SETGATE(idt[T_BRKPT], 1, GD_KT, __trap_brkpt, 3);
-	SETGATE(idt[T_OFLOW], 1, GD_KT, __trap_oflow, 0);
-	SETGATE(idt[T_BOUND], 1, GD_KT, __trap_bound, 0);
-	SETGATE(idt[T_ILLOP], 1, GD_KT, __trap_illop, 0);
-	SETGATE(idt[T_DEVICE], 1, GD_KT, __trap_device, 0);
-	SETGATE(idt[T_DBLFLT], 1, GD_KT, __trap_dblflt, 0);
-	//SETGATE(idt[T_COPROC], 1, GD_KT, __trap_coproc, 0);
-	SETGATE(idt[T_TSS], 1, GD_KT, __trap_tss, 0);
-	SETGATE(idt[T_SEGNP], 1, GD_KT, __trap_segnp, 0);
-	SETGATE(idt[T_STACK], 1, GD_KT, __trap_stack, 0);
-	SETGATE(idt[T_GPFLT], 1, GD_KT, __trap_gpflt, 0);
-	SETGATE(idt[T_PGFLT], 1, GD_KT, __trap_pgflt, 0);
-	//SETGATE(idt[T_RES], 1, GD_KT, __trap_res, 0);
-	SETGATE(idt[T_FPERR], 1, GD_KT, __trap_fperr, 0);
-	SETGATE(idt[T_ALIGN], 1, GD_KT, __trap_align, 0);
-	SETGATE(idt[T_MCHK], 1, GD_KT, __trap_mchk, 0);
-	SETGATE(idt[T_SIMDERR], 1, GD_KT, __trap_simderr, 0);
-	SETGATE(idt[T_SYSCALL], 0, GD_KT, __trap_syscall, 3);
-	*/
-
 	idt_pd.pd_lim = sizeof(idt)-1;
 	idt_pd.pd_base = (uint64_t)idt;
+
 	// Per-CPU setup
 	trap_init_percpu();
 }
@@ -195,22 +171,19 @@ trap_init_percpu(void)
 	// LAB 4: Your code here:
 
 	// note: calculate gdt_index for further use
-	int idx = (GD_TSS0 >> 3) + 2 * thiscpu->cpu_id;
+	int gdtIndex = (GD_TSS0 >> 3) + 2 * thiscpu->cpu_id;
 
-	// note: modified from original given code
 	thiscpu->cpu_ts.ts_esp0 = KSTACKTOP - thiscpu->cpu_id * (KSTKSIZE + KSTKGAP);
-	SETTSS((struct SystemSegdesc64 *)(&gdt[idx]), STS_T64A, (uint64_t)(&thiscpu->cpu_ts),sizeof(struct Taskstate), 0);
-	ltr(idx << 3);
 
 	// Setup a TSS so that we get the right stack
 	// when we trap to the kernel.
-	//ts.ts_esp0 = KSTACKTOP;
-
 	// Initialize the TSS slot of the gdt.
-	//SETTSS((struct SystemSegdesc64 *)((gdt_pd>>16)+40),STS_T64A, (uint64_t) (&ts),sizeof(struct Taskstate), 0);
+	SETTSS((struct SystemSegdesc64 *)(&gdt[gdtIndex]), STS_T64A, (uint64_t)(&thiscpu->cpu_ts),sizeof(struct Taskstate), 0);
+	
 	// Load the TSS selector (like other segment selectors, the
 	// bottom three bits are special; we leave them 0)
-	//ltr(GD_TSS0);
+	
+	ltr(gdtIndex << 3);
 
 	// Load the IDT
 	lidt(&idt_pd);
@@ -274,6 +247,7 @@ trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
+	struct PushRegs r = tf->tf_regs;
 	switch(tf->tf_trapno) {
 		case T_PGFLT:
 			page_fault_handler(tf);
@@ -282,8 +256,13 @@ trap_dispatch(struct Trapframe *tf)
 			monitor(tf);
 			return;
 		case T_SYSCALL:
-			tf->tf_regs.reg_rax = syscall(tf->tf_regs.reg_rax, tf->tf_regs.reg_rdx, tf->tf_regs.reg_rcx,
-					tf->tf_regs.reg_rbx, tf->tf_regs.reg_rdi, tf->tf_regs.reg_rsi);
+			tf->tf_regs.reg_rax = syscall(
+				r.reg_rax, 
+				r.reg_rdx, 
+				r.reg_rcx, 
+				r.reg_rbx, 
+				r.reg_rdi, 
+				r.reg_rsi);
 			return;
 		default:
 			break;
@@ -345,7 +324,6 @@ trap(struct Trapframe *tf)
 		// serious kernel work.
 		// LAB 4: Your code here.
 		lock_kernel();
-
 		assert(curenv);
 
 		// Garbage collect if current enviroment is a zombie
@@ -392,7 +370,7 @@ page_fault_handler(struct Trapframe *tf)
 
 	// LAB 3: Your code here.
 	if((tf->tf_cs & 3) == 0)
-		panic("page_fault: kernel-mode");
+		panic("page_fault in kernel-mode");
 
 	// We've already handled kernel-mode exceptions, so if we get here,
 	// the page fault happened in user mode.

@@ -51,8 +51,7 @@
    pusha,popa so you will find these macros handy.
  */
 
-	// Macros are referred from inc/trap.h
-	// See Intel IA-32 Developer's Manual Table 5-1
+	// Macros are referred in inc/trap.h
 	TRAPHANDLER_NOEC(__trap_divide, T_DIVIDE)
 	TRAPHANDLER_NOEC(__trap_debug, T_DEBUG)
 	TRAPHANDLER_NOEC(__trap_nmi, T_NMI)
@@ -62,20 +61,20 @@
 	TRAPHANDLER_NOEC(__trap_illop, T_ILLOP)
 	TRAPHANDLER_NOEC(__trap_device, T_DEVICE)
 	TRAPHANDLER(__trap_dblflt, T_DBLFLT)
-	//TRAPHANDLER_NOEC(__trap_coproc, T_COPROC)
+
 	TRAPHANDLER(__trap_tss, T_TSS)
 	TRAPHANDLER(__trap_segnp, T_SEGNP)
 	TRAPHANDLER(__trap_stack, T_STACK)
 	TRAPHANDLER(__trap_gpflt, T_GPFLT)
 	TRAPHANDLER(__trap_pgflt, T_PGFLT)
-	//TRAPHANDLER_NOEC(__trap_res, T_RES)
+
 	TRAPHANDLER_NOEC(__trap_fperr, T_FPERR)
 	TRAPHANDLER(__trap_align, T_ALIGN)
 	TRAPHANDLER_NOEC(__trap_mchk, T_MCHK)
 	TRAPHANDLER_NOEC(__trap_simderr, T_SIMDERR)
 	TRAPHANDLER_NOEC(__trap_syscall, T_SYSCALL)
 
-	// note: modified for LAB4
+	// Added for LAB4
 	TRAPHANDLER_NOEC(__irq_timer, IRQ_OFFSET + IRQ_TIMER)
 	TRAPHANDLER_NOEC(__irq_kbd, IRQ_OFFSET + IRQ_KBD)
 	TRAPHANDLER_NOEC(__irq_serial, IRQ_OFFSET + IRQ_SERIAL)

@@ -32,6 +32,7 @@ sched_yield(void)
 
 	// LAB 4: Your code here.
 	
+	/*
 	int i = 0, j = 1, k = 0;
 
 	if (curenv)
@@ -48,6 +49,26 @@ sched_yield(void)
 		env_run(&envs[k]);
 	    }
 	}
+	*/
+
+	//new loop attempt
+	
+	int i, j;
+	idle = thiscpu->cpu_env;
+	
+	if (idle != NULL){
+		i = ENVX(idle->env_id);
+	}
+
+	for (j = 0; j < NENV; j++){
+
+		i = (i +1) % NENV;
+		if (envs[i].env_status == ENV_RUNNABLE){
+			env_run(&envs[i]);
+			return;
+		}
+	}
+
 
 	if (curenv && curenv->env_status == ENV_RUNNING) {
 	    env_run(curenv);

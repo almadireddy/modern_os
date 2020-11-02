@@ -16,7 +16,8 @@ libmain(int argc, char **argv)
 	
 	// sys_getenvid() return id of env
 	// pass to ENVX to get index in envs[] 
-	thisenv = &envs[ENVX(sys_getenvid())];
+	//thisenv = &envs[ENVX(sys_getenvid())];
+	thisenv = envs + ENVX(sys_getenvid());
 
 	// save the name of the program so that panic() can use it
 	if (argc > 0)
