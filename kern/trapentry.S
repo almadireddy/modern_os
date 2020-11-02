@@ -22,7 +22,6 @@
  *   void NAME();
  * where NAME is the argument passed to TRAPHANDLER.
  */
-
 #define TRAPHANDLER(name, num)						\
 	.globl name;		/* define global symbol for 'name' */	\
 	.type name, @function;	/* symbol type is function */		\
@@ -35,7 +34,6 @@
  * It pushes a 0 in place of the error code, so the trap frame has the same
  * format in either case.
  */
-
 #define TRAPHANDLER_NOEC(name, num)					\
 	.globl name;							\
 	.type name, @function;						\
@@ -53,30 +51,37 @@
    pusha,popa so you will find these macros handy.
  */
 
-// https://wiki.osdev.org/Exceptions - ref for which ones need NOEC
-TRAPHANDLER_NOEC(tDivide, T_DIVIDE)
-TRAPHANDLER_NOEC(tDebug, T_DEBUG)
-TRAPHANDLER_NOEC(tNmi, T_NMI)
-TRAPHANDLER_NOEC(tBreakpoint, T_BRKPT)
-TRAPHANDLER_NOEC(tOverflow, T_OFLOW)
-TRAPHANDLER_NOEC(tBoundCheck, T_BOUND)
-TRAPHANDLER_NOEC(tIllegalOpcode, T_ILLOP)
-TRAPHANDLER_NOEC(tDeviceNotAvailable, T_DEVICE)
-TRAPHANDLER(tDoubleFault, T_DBLFLT)
+	// Macros are referred from inc/trap.h
+	// See Intel IA-32 Developer's Manual Table 5-1
+	TRAPHANDLER_NOEC(__trap_divide, T_DIVIDE)
+	TRAPHANDLER_NOEC(__trap_debug, T_DEBUG)
+	TRAPHANDLER_NOEC(__trap_nmi, T_NMI)
+	TRAPHANDLER_NOEC(__trap_brkpt, T_BRKPT)
+	TRAPHANDLER_NOEC(__trap_oflow, T_OFLOW)
+	TRAPHANDLER_NOEC(__trap_bound, T_BOUND)
+	TRAPHANDLER_NOEC(__trap_illop, T_ILLOP)
+	TRAPHANDLER_NOEC(__trap_device, T_DEVICE)
+	TRAPHANDLER(__trap_dblflt, T_DBLFLT)
+	//TRAPHANDLER_NOEC(__trap_coproc, T_COPROC)
+	TRAPHANDLER(__trap_tss, T_TSS)
+	TRAPHANDLER(__trap_segnp, T_SEGNP)
+	TRAPHANDLER(__trap_stack, T_STACK)
+	TRAPHANDLER(__trap_gpflt, T_GPFLT)
+	TRAPHANDLER(__trap_pgflt, T_PGFLT)
+	//TRAPHANDLER_NOEC(__trap_res, T_RES)
+	TRAPHANDLER_NOEC(__trap_fperr, T_FPERR)
+	TRAPHANDLER(__trap_align, T_ALIGN)
+	TRAPHANDLER_NOEC(__trap_mchk, T_MCHK)
+	TRAPHANDLER_NOEC(__trap_simderr, T_SIMDERR)
+	TRAPHANDLER_NOEC(__trap_syscall, T_SYSCALL)
 
-TRAPHANDLER(tInvalidStackSegment, T_TSS)
-TRAPHANDLER(tSegmentNotPresent, T_SEGNP)
-TRAPHANDLER(tStackException, T_STACK)
-TRAPHANDLER(tGeneralProtection, T_GPFLT)
-TRAPHANDLER(tPageFault, T_PGFLT)
-
-TRAPHANDLER_NOEC(tFloatingPointError, T_FPERR)
-TRAPHANDLER(tAlignmentCheck, T_ALIGN)
-TRAPHANDLER_NOEC(tMachineCheck, T_MCHK)
-TRAPHANDLER_NOEC(tSIMDError, T_SIMDERR)
-
-TRAPHANDLER_NOEC(tSyscall, T_SYSCALL)
-TRAPHANDLER(tDefault, T_DEFAULT)
+	// note: modified for LAB4
+	TRAPHANDLER_NOEC(__irq_timer, IRQ_OFFSET + IRQ_TIMER)
+	TRAPHANDLER_NOEC(__irq_kbd, IRQ_OFFSET + IRQ_KBD)
+	TRAPHANDLER_NOEC(__irq_serial, IRQ_OFFSET + IRQ_SERIAL)
+	TRAPHANDLER_NOEC(__irq_spurious, IRQ_OFFSET + IRQ_SPURIOUS)
+	TRAPHANDLER_NOEC(__irq_ide, IRQ_OFFSET + IRQ_IDE)
+	TRAPHANDLER_NOEC(__irq_error, IRQ_OFFSET + IRQ_ERROR)
 
 /*
  * Lab 3: Your code here for _alltraps
@@ -84,18 +89,24 @@ TRAPHANDLER(tDefault, T_DEFAULT)
  * Hint: Be sure to review the x64 calling convention from lab1
  *       for how to pass a pointer to the trapframe.
  */
-
-
+.globl _alltraps
 _alltraps:
-subq $16, %rsp
-movw %ds, 8(%rsp)
-movw %es, 0(%rsp)
-PUSHA
-movl $GD_KD, %eax
-movw %ax, %ds
-movw %ax, %es
-movq %rsp,%rdi 
-call trap
+	subq $16, %rsp
+	movw %ds, 8(%rsp)
+	movw %es, 0(%rsp)
 
-spin:
-    jmp spin
+	PUSHA
+
+	movq $GD_KD, %rax
+	movq %rax, %ds
+	movq %rax, %es
+	movq %rsp, %rdi
+
+	call trap
+
+	POPA_
+
+	movw 0(%rsp), %es
+	movw 8(%rsp), %ds
+	addq $16, %rsp
+	iret
