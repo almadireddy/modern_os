@@ -61,7 +61,16 @@ alloc_block(void)
 	// super->s_nblocks blocks in the disk altogether.
 
 	// LAB 5: Your code here.
-	panic("alloc_block not implemented");
+	uint32_t blockno;
+	for (blockno = 0; blockno < super->s_nblocks; blockno++) {
+		if (block_is_free(blockno)) {
+			bitmap[blockno/32] &= ~(1<<(blockno%32));
+			flush_block(diskaddr(blockno));
+			return blockno;
+		}
+	}
+
+	//panic("alloc_block not implemented");
 	return -E_NO_DISK;
 }
 
@@ -89,20 +98,17 @@ check_bitmap(void)
 // File system structures
 // --------------------------------------------------------------
 
-
 // Initialize the file system
 void
 fs_init(void)
 {
 	static_assert(sizeof(struct File) == 256);
 
-
 	// Find a JOS disk.  Use the second IDE disk (number 1) if available.
 	if (ide_probe_disk1())
 		ide_set_disk(1);
 	else
 		ide_set_disk(0);
-
 
 	bc_init();
 
@@ -137,8 +143,27 @@ fs_init(void)
 int
 file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool alloc)
 {
-        // LAB 5: Your code here.
-        panic("file_block_walk not implemented");
+	// LAB 5: Your code here.
+	if (filebno >= NDIRECT + NINDIRECT)
+		return -E_INVAL;
+
+	if (filebno < NDIRECT) {
+		*ppdiskbno = &f->f_direct[filebno];
+		return 0;
+	}
+
+	if (f->f_indirect == 0) {
+		if (alloc == 0)
+			return -E_NOT_FOUND;
+		if ((f->f_indirect = alloc_block()) == 0)
+			return -E_NO_DISK;
+		memset(diskaddr(f->f_indirect), 0, BLKSIZE);
+	}
+
+	*ppdiskbno = &((uint32_t *)(diskaddr(f->f_indirect)))[filebno - NDIRECT];
+	return 0;
+
+	//panic("file_block_walk not implemented");
 }
 
 // Set *blk to the address in memory where the filebno'th
@@ -152,7 +177,20 @@ int
 file_get_block(struct File *f, uint32_t filebno, char **blk)
 {
 	// LAB 5: Your code here.
-	panic("file_block_walk not implemented");
+	int r;
+	uint32_t *pdiskbno;
+
+	if ((r = file_block_walk(f, filebno, &pdiskbno, 1)) < 0)
+		return r;
+
+	if (*pdiskbno == 0)
+		if ((*pdiskbno = alloc_block()) == 0)
+			return -E_NO_DISK;
+
+	*blk = diskaddr(*pdiskbno);
+	return 0;
+
+	//panic("file_get_block not implemented");
 }
 
 // Try to find a file named "name" in dir.  If so, set *file to it.
@@ -436,7 +474,7 @@ file_flush(struct File *f)
 
 	for (i = 0; i < (f->f_size + BLKSIZE - 1) / BLKSIZE; i++) {
 		if (file_block_walk(f, i, &pdiskbno, 0) < 0 ||
-		    pdiskbno == NULL || *pdiskbno == 0)
+			pdiskbno == NULL || *pdiskbno == 0)
 			continue;
 		flush_block(diskaddr(*pdiskbno));
 	}

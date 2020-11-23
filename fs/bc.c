@@ -58,8 +58,6 @@ bc_pgfault(struct UTrapframe *utf)
 	    panic("fs/bc.c:bc_pgfault: ide_read: %e", r);
 	}
 
-	// LAB 5: Your code here
-
 	if ((r = sys_page_map(0, addr, 0, addr, uvpt[PGNUM(addr)] & PTE_SYSCALL)) < 0)
 		panic("in bc_pgfault, sys_page_map: %e", r);
 
@@ -89,10 +87,17 @@ flush_block(void *addr)
 	
 	if (!va_is_mapped(addr) || !va_is_dirty(addr)) return;
 
+	int r;
 	addr = ROUNDDOWN(addr, BLKSIZE);
 
-	ide_write(blockno * BLKSECTS, (void *) addr, BLKSECTS);
-	sys_page_map(0, addr, 0, addr, uvpt[PGNUM(addr)] & PTE_SYSCALL);
+	if((r = ide_write(blockno * BLKSECTS, (void *) addr, BLKSECTS)) < 0){
+
+		panic("flush_block, ide_write: %e", r);
+	}
+	//sys_page_map(0, addr, 0, addr, uvpt[PGNUM(addr)] & PTE_SYSCALL);
+	if((r = sys_page_map(0, addr, 0, addr, PTE_USER)) < 0){
+		panic("flush block, sys_page_map: %e", r);
+	}
 }
 
 // Test that the block cache works, by smashing the superblock and

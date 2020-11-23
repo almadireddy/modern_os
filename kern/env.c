@@ -504,7 +504,9 @@ env_create(uint8_t *binary, enum EnvType type)
     // LAB 5: Your code here.
     
     if (type == ENV_TYPE_FS) {
-	e->env_tf.tf_eflags |= FL_IOPL_3;
+	
+	//e->env_tf.tf_eflags |= FL_IOPL_3;
+	e->env_tf.tf_eflags |= FL_IOPL_MASK;
     }
 }
 

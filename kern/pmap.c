@@ -220,6 +220,7 @@ boot_alloc(uint32_t n)
 	//
 	// LAB 2: Your code here.
 	result = nextfree;
+	
 	if(n > 0) {
 		nextfree += ROUNDUP(n, PGSIZE);
 	}
@@ -414,10 +415,13 @@ page_init(void)
 	struct PageInfo* last = NULL;
 
 	for (i = npages - 1; i > 0; i--) {
-		if(page2pa(&pages[i]) >= PADDR(KERNBASE + IOPHYSMEM) && page2pa(&pages[i]) < PADDR(boot_alloc(0)))
+		if(page2pa(&pages[i]) >= PADDR(KERNBASE + IOPHYSMEM) && page2pa(&pages[i]) < PADDR(boot_alloc(0))){
 			continue;
-		if(page2pa(&pages[i]) == MPENTRY_PADDR)
+		}
+		if(page2pa(&pages[i]) == MPENTRY_PADDR){
 			continue;
+		}
+
 		pages[i].pp_ref = 0;
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
@@ -468,16 +472,19 @@ void
 page_free(struct PageInfo *pp)
 {
 	// Fill this function in
-	// Hint: You may want to panic if pp->pp_ref is nonzero or
-	// pp->pp_link is not NULL.
-
+	// Hint: You may want to panic 
+	// if pp->pp_ref is nonzero or pp->pp_link is not NULL.
+	
+	//if (pp)
 	if(pp->pp_ref || pp->pp_link) {
-		warn("page still in use");
-		return;
+		//warn("page still in use");
+		////return;
+		panic("page still in use");
 	}
 	pp->pp_link = page_free_list;
+	//end if
 	page_free_list = pp;
-	pp->pp_ref = 0;
+	//pp->pp_ref = 0;
 }
 
 //
@@ -649,14 +656,27 @@ boot_map_region(pml4e_t *pml4e, uintptr_t la, size_t size, physaddr_t pa, int pe
 int
 page_insert(pml4e_t *pml4e, struct PageInfo *pp, void *va, int perm)
 {
-	// Fill this function in
+	//reset perm and update tlb if the correct page was already mapped (grader issue)	
+	pte_t *pte_p = pml4e_walk(pml4e, va, 0);
+	if (pte_p && page2pa(pp) == PTE_ADDR(*pte_p)){
+		
+		*pte_p = PTE_ADDR(*pte_p) | perm | PTE_P;
+		tlb_invalidate(pml4e, va);
+		return 0;
+	}
+
+	// Fill this function in (before lab 5)
 	page_remove(pml4e, va);
-	pte_t *ptep = pml4e_walk(pml4e, va, 1);
-	if(ptep == NULL)
+	pte_p = pml4e_walk(pml4e, va, 1);
+	
+	if(pte_p == NULL){
 		return -E_NO_MEM;
-	*ptep = page2pa(pp);
-	*ptep |= perm | PTE_P;
+	}
+	
+	*pte_p = page2pa(pp);
+	*pte_p |= perm | PTE_P;
 	pp->pp_ref++;
+	
 	return 0;
 }
 
@@ -675,12 +695,17 @@ struct PageInfo *
 page_lookup(pml4e_t *pml4e, void *va, pte_t **pte_store)
 {
 	// Fill this function in
-	pte_t *ptep = pml4e_walk(pml4e, va, 0);
-	if(ptep == NULL)
+	pte_t *pte_p = pml4e_walk(pml4e, va, 0);
+	
+	if(pte_p == NULL){
 		return NULL;
-	if(pte_store)
-		*pte_store = ptep;
-	return pa2page(PTE_ADDR(*ptep));
+	}
+	
+	if(pte_store){
+		*pte_store = pte_p;
+	}
+	
+	return pa2page(PTE_ADDR(*pte_p));
 }
 
 //
@@ -702,11 +727,11 @@ void
 page_remove(pml4e_t *pml4e, void *va)
 {
 	// Fill this function in
-	pte_t *ptep;
-	struct PageInfo *pp = page_lookup(pml4e, va, &ptep);
+	pte_t *pte_p;
+	struct PageInfo *pp = page_lookup(pml4e, va, &pte_p);
 	if(pp) {
 		page_decref(pp);
-		*ptep = 0;
+		*pte_p = 0;
 		tlb_invalidate(pml4e, va);
 	}
 }
@@ -794,7 +819,7 @@ user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 {
 	// LAB 3: Your code here.
 	void *bva;
-	pte_t *ptep;
+	pte_t *pte_p;
 	struct PageInfo *pp;
 	perm |= PTE_P;
 
@@ -804,8 +829,8 @@ user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 			return -E_FAULT;
 		}
 
-		pp = page_lookup(env->env_pml4e, bva, &ptep);
-		if(pp == NULL || (*ptep & perm) != perm) {
+		pp = page_lookup(env->env_pml4e, bva, &pte_p);
+		if(pp == NULL || (*pte_p & perm) != perm) {
 			user_mem_check_addr = (uintptr_t)bva;
 			return -E_FAULT;
 		}
