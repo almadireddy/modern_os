@@ -92,7 +92,7 @@ spawn(const char *prog, const char **argv)
 	// Read elf header
 	elf = (struct Elf*) elf_buf;
 	if (readn(fd, elf_buf, sizeof(elf_buf)) != sizeof(elf_buf)
-            || elf->e_magic != ELF_MAGIC) {
+	    || elf->e_magic != ELF_MAGIC) {
 		close(fd);
 		cprintf("elf magic %08x want %08x\n", elf->e_magic, ELF_MAGIC);
 		return -E_NOT_EXEC;
@@ -156,7 +156,7 @@ spawnl(const char *prog, const char *arg0, ...)
 	int argc=0;
 	va_list vl;
 	va_start(vl, arg0);
-	while(va_arg(vl, void *) != NULL)
+	while (va_arg(vl, void *) != NULL)
 		argc++;
 	va_end(vl);
 
@@ -168,7 +168,7 @@ spawnl(const char *prog, const char *arg0, ...)
 
 	va_start(vl, arg0);
 	unsigned i;
-	for(i=0;i<argc;i++)
+	for (i = 0; i < argc; i++)
 		argv[i+1] = va_arg(vl, const char *);
 	va_end(vl);
 	return spawn(prog, argv);
@@ -261,7 +261,7 @@ error:
 
 static int
 map_segment(envid_t child, uintptr_t va, size_t memsz,
-	    int fd, size_t filesz, off_t fileoffset, int perm)
+	int fd, size_t filesz, off_t fileoffset, int perm)
 {
 	int i, r;
 	void *blk;
@@ -301,43 +301,43 @@ static int
 copy_shared_pages(envid_t child)
 {
 	// LAB 5: Your code here.
+	// note: just copied and modified from lib/fork.c, function envid_t fork(void)
 	void *addr;
 	int r;
 	pte_t i, j, k, l, ptx = 0;
 
 	// note: pml4e, pdpe, pde, pte tables are all mapped to linear space such that one can goto
 	// each pte by a specific index, space for empty (not present) entries are reserved recursively
-	
 	for (i = 0; i < VPML4E(UTOP); i++) {
 		if ((uvpml4e[ptx / NPDPENTRIES / NPDENTRIES / NPTENTRIES] & PTE_P) == 0) {
 			ptx += NPDPENTRIES * NPDENTRIES * NPTENTRIES;
 			continue;
 		}
+
 		for (j = 0; j < NPDENTRIES; j++) {
 			if ((uvpde[ptx / NPDENTRIES / NPTENTRIES] & PTE_P) == 0) {
 				ptx += NPDENTRIES * NPTENTRIES;
 				continue;
 			}
+
 			for (k = 0; k < NPDENTRIES; k++) {
 				if ((uvpd[ptx / NPTENTRIES] & PTE_P) == 0) {
 					ptx += NPTENTRIES;
 					continue;
 				}
-		
+
 				for (l = 0; l < NPTENTRIES; l++) {
 					if ((uvpt[ptx] & PTE_SHARE) != 0) {
 						addr = (void *)(ptx * PGSIZE);
-				
-						if ((r = sys_page_map(0, addr, child, addr, uvpt[ptx] & PTE_SYSCALL)) < 0){
+						if ((r = sys_page_map(0, addr, child, addr, uvpt[ptx] & PTE_SYSCALL)) < 0)
 							return r;
-						}
 					}
 					ptx++;
 				}
 			}
 		}
 	}
-	
+
 	return 0;
 }
 

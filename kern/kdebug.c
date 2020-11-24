@@ -37,13 +37,12 @@ dwarf_loclist(Dwarf_Attribute * attr,
 extern int dwarf_init_eh_section(Dwarf_Debug dbg, Dwarf_Error *error);
 extern int
 dwarf_get_fde_at_pc(Dwarf_Debug dbg, Dwarf_Addr pc,
-		    Dwarf_Fde ret_fde, Dwarf_Cie cie,
-		    Dwarf_Error *error);
+    Dwarf_Fde ret_fde, Dwarf_Cie cie,
+    Dwarf_Error *error);
 extern int
 dwarf_get_fde_info_for_all_regs(Dwarf_Debug dbg, Dwarf_Fde fde,
-				Dwarf_Addr pc_requested,
-				Dwarf_Regtable *reg_table, Dwarf_Addr *row_pc,
-				Dwarf_Error *error);
+    Dwarf_Addr pc_requested, Dwarf_Regtable *reg_table, Dwarf_Addr *row_pc,
+    Dwarf_Error *error);
 
 int64_t
 _dwarf_read_sleb128(uint8_t *data, uint64_t *offsetp);
@@ -125,7 +124,7 @@ int list_func_die(struct Ripdebuginfo *info, Dwarf_Die *die, uint64_t addr)
 	uint64_t ret_val=8;
 	uint64_t ret_offset=0;
 
-	if(die->die_tag != DW_TAG_subprogram)
+	if (die->die_tag != DW_TAG_subprogram)
 		return 0;
 
 	memset(&ln, 0, sizeof(_Dwarf_Line));
@@ -133,7 +132,7 @@ int list_func_die(struct Ripdebuginfo *info, Dwarf_Die *die, uint64_t addr)
 	low  = _dwarf_attr_find(die, DW_AT_low_pc);
 	high = _dwarf_attr_find(die, DW_AT_high_pc);
 
-	if((low && (low->u[0].u64 < addr)) && (high && (high->u[0].u64 > addr)))
+	if ((low && (low->u[0].u64 < addr)) && (high && (high->u[0].u64 > addr)))
 	{
 		info->rip_file = die->cu_die->die_name;
 
@@ -150,21 +149,21 @@ int list_func_die(struct Ripdebuginfo *info, Dwarf_Die *die, uint64_t addr)
 
 		Dwarf_Attribute* attr;
 
-		if(dwarf_child(dbg, cu, &sib, &ret) != DW_DLE_NO_ENTRY)
+		if (dwarf_child(dbg, cu, &sib, &ret) != DW_DLE_NO_ENTRY)
 		{
-			if(ret.die_tag != DW_TAG_formal_parameter)
+			if (ret.die_tag != DW_TAG_formal_parameter)
 				goto last;
 
 			attr = _dwarf_attr_find(&ret, DW_AT_type);
 	
 		try_again:
-			if(attr != NULL)
+			if (attr != NULL)
 			{
 				offset = (uint64_t)cu->cu_offset + attr->u[0].u64;
 				dwarf_offdie(dbg, offset, &sib, *cu);
 				attr = _dwarf_attr_find(&sib, DW_AT_byte_size);
 		
-				if(attr != NULL)
+				if (attr != NULL)
 				{
 					ret_val = attr->u[0].u64;
 				}
@@ -206,20 +205,20 @@ int list_func_die(struct Ripdebuginfo *info, Dwarf_Die *die, uint64_t addr)
 			info->rip_fn_narg++;
 			sib = ret; 
 
-			while(dwarf_siblingof(dbg, &sib, &ret, cu) == DW_DLV_OK)	
+			while (dwarf_siblingof(dbg, &sib, &ret, cu) == DW_DLV_OK)	
 			{
-				if(ret.die_tag != DW_TAG_formal_parameter)
+				if (ret.die_tag != DW_TAG_formal_parameter)
 					break;
 
 				attr = _dwarf_attr_find(&ret, DW_AT_type);
     
-				if(attr != NULL)
+				if (attr != NULL)
 				{	   
 					offset = (uint64_t)cu->cu_offset + attr->u[0].u64;
 					dwarf_offdie(dbg, offset, &sib, *cu);
 					attr = _dwarf_attr_find(&sib, DW_AT_byte_size);
         
-					if(attr != NULL)
+					if (attr != NULL)
 					{
 						ret_val = attr->u[0].u64;
 					}
@@ -296,44 +295,48 @@ debuginfo_rip(uintptr_t addr, struct Ripdebuginfo *info)
 	if (addr >= ULIM) {
 		elf = (void *)0x10000 + KERNBASE;
 	} else {
-		if(curenv != lastenv) {
+		if (curenv != lastenv) {
 			find_debug_sections((uintptr_t)curenv->elf);
 			lastenv = curenv;
 		}
 		elf = curenv->elf;
 	}
+    
+    
 	_dwarf_init(dbg, elf);
 
 	sect = _dwarf_find_section(".debug_info");	
 	dbg->dbg_info_offset_elf = (uint64_t)sect->ds_data; 
 	dbg->dbg_info_size = sect->ds_size;
-
+    
 	assert(dbg->dbg_info_size);
-	while(_get_next_cu(dbg, &cu) == 0)
+	while (_get_next_cu(dbg, &cu) == 0)
 	{
-		if(dwarf_siblingof(dbg, NULL, &cudie, &cu) == DW_DLE_NO_ENTRY)
+		if (dwarf_siblingof(dbg, NULL, &cudie, &cu) == DW_DLE_NO_ENTRY)
+		{
 			continue;
-
+		}	
 		cudie.cu_header = &cu;
 		cudie.cu_die = NULL;
-
-		if(dwarf_child(dbg, &cu, &cudie, &die) == DW_DLE_NO_ENTRY)
+	    
+		if (dwarf_child(dbg, &cu, &cudie, &die) == DW_DLE_NO_ENTRY)
+		{
 			continue;
-
+		}	
 		die.cu_header = &cu;
 		die.cu_die = &cudie;
-		while(1)
+		while (1)
 		{
-			if(list_func_die(info, &die, addr))
+			if (list_func_die(info, &die, addr))
 				goto find_done;
-			if(dwarf_siblingof(dbg, &die, &die2, &cu) < 0)
+			if (dwarf_siblingof(dbg, &die, &die2, &cu) < 0)
 				break; 
 			die = die2;
 			die.cu_header = &cu;
 			die.cu_die = &cudie;
 		}
 	}
-
+    
 	return -1;
 
 find_done:
@@ -342,8 +345,7 @@ find_done:
 		return -1;
 
 	if (dwarf_get_fde_at_pc(dbg, addr, fde, cie, NULL) == DW_DLV_OK) {
-		dwarf_get_fde_info_for_all_regs(dbg, fde, addr,
-						&info->reg_table,
+		dwarf_get_fde_info_for_all_regs(dbg, fde, addr, &info->reg_table,
 						NULL, NULL);
 
 #if 0

@@ -23,7 +23,6 @@ uint64_t end_debug;
 static void boot_aps(void);
 
 
-
 void
 i386_init(void)
 {
@@ -43,7 +42,7 @@ i386_init(void)
 	cprintf("6828 decimal is %o octal!\n", 6828);
 
 	extern char end[];
-	end_debug = read_section_headers((0x10000+KERNBASE), (uintptr_t)end);
+	end_debug = read_section_headers((0x10000+KERNBASE), (uintptr_t)end); 
 
 	// Lab 2 memory management initialization functions
 	x64_vm_init();
@@ -66,9 +65,6 @@ i386_init(void)
 	// Starting non-boot CPUs
 	boot_aps();
 
-
-
-
 	// Start fs.
 	ENV_CREATE(fs_fs, ENV_TYPE_FS);
 
@@ -77,7 +73,47 @@ i386_init(void)
 	ENV_CREATE(TEST, ENV_TYPE_USER);
 #else
 	// Touch all you want.
+	//ENV_CREATE(user_primes, ENV_TYPE_USER);
 
+	// Below are Lab 3 test codes
+	//ENV_CREATE(user_hello, ENV_TYPE_USER);
+
+	// Lab 3: Exercise 9 - Your code here
+	//ENV_CREATE(user_divzero, ENV_TYPE_USER);
+	//ENV_CREATE(user_softint, ENV_TYPE_USER);
+	//ENV_CREATE(user_badsegment, ENV_TYPE_USER);
+	//ENV_CREATE(user_faultread, ENV_TYPE_USER);
+	//ENV_CREATE(user_faultreadkernel, ENV_TYPE_USER);
+	//ENV_CREATE(user_faultwrite, ENV_TYPE_USER);
+	//ENV_CREATE(user_faultwritekernel, ENV_TYPE_USER);
+	//ENV_CREATE(user_breakpoint, ENV_TYPE_USER);
+	//ENV_CREATE(user_testbss, ENV_TYPE_USER);
+	//ENV_CREATE(user_hello, ENV_TYPE_USER);
+	//ENV_CREATE(user_buggyhello, ENV_TYPE_USER);
+	//ENV_CREATE(user_buggyhello2, ENV_TYPE_USER);
+
+	// Lab 3: Exercise 10 - Your code here
+	//ENV_CREATE(user_evilhello, ENV_TYPE_USER);
+
+	// Below are Lab 4 test codes
+	//ENV_CREATE(user_yield, ENV_TYPE_USER);
+	//ENV_CREATE(user_faultread, ENV_TYPE_USER);
+	//ENV_CREATE(user_faultdie, ENV_TYPE_USER);
+	//ENV_CREATE(user_faultalloc, ENV_TYPE_USER);
+	//ENV_CREATE(user_faultallocbad, ENV_TYPE_USER);
+	//ENV_CREATE(user_forktree, ENV_TYPE_USER);
+	//ENV_CREATE(user_spin, ENV_TYPE_USER);
+	//ENV_CREATE(user_stresssched, ENV_TYPE_USER);
+	//ENV_CREATE(user_sendpage, ENV_TYPE_USER);
+	//ENV_CREATE(user_pingpong, ENV_TYPE_USER);
+	//ENV_CREATE(user_primes, ENV_TYPE_USER);
+
+	// Below are Lab 5 test codes
+	//ENV_CREATE(user_testfile, ENV_TYPE_USER);
+	//ENV_CREATE(user_spawnhello, ENV_TYPE_USER);
+	//ENV_CREATE(user_testpteshare, ENV_TYPE_USER);
+	//ENV_CREATE(user_testfdsharing, ENV_TYPE_USER);
+	//ENV_CREATE(user_testkbd, ENV_TYPE_USER);
 	ENV_CREATE(user_icode, ENV_TYPE_USER);
 #endif // TEST*
 
@@ -114,7 +150,7 @@ boot_aps(void)
 		// Start the CPU at mpentry_start
 		lapic_startap(c->cpu_id, PADDR(code));
 		// Wait for the CPU to finish some basic setup in mp_main()
-		while(c->cpu_status != CPU_STARTED)
+		while (c->cpu_status != CPU_STARTED)
 			;
 	}
 }
@@ -137,12 +173,12 @@ mp_main(void)
 	// only one CPU can enter the scheduler at a time!
 	//
 	// Your code here:
-
 	lock_kernel();
 	sched_yield();
-	// Remove this after you finish Exercise 4
-}
 
+	// Remove this after you finish Exercise 4
+	//for (;;);
+}
 
 /*
  * Variable panicstr contains argument to first call to panic; used as flag

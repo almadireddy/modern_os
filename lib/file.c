@@ -2,7 +2,6 @@
 #include <inc/string.h>
 #include <inc/lib.h>
 
-
 #define debug 0
 
 union Fsipc fsipcbuf __attribute__((aligned(PGSIZE)));
@@ -73,14 +72,12 @@ open(const char *path, int mode)
 	struct Fd *fd;
 	int r;
 
-	if (strlen(path) >= MAXPATHLEN){
+	if (strlen(path) >= MAXPATHLEN)
 		return -E_BAD_PATH;
-	}
-	
-	if ((r = fd_alloc(&fd)) < 0){
+
+	if ((r = fd_alloc(&fd)) < 0)
 		return r;
-	}
-	
+
 	strcpy(fsipcbuf.open.req_path, path);
 	fsipcbuf.open.req_omode = mode;
 
@@ -88,9 +85,8 @@ open(const char *path, int mode)
 		fd_close(fd, 0);
 		return r;
 	}
-	
-	return fd2num(fd);
 
+	return fd2num(fd);
 	//panic ("open not implemented");
 }
 
@@ -127,13 +123,12 @@ devfile_read(struct Fd *fd, void *buf, size_t n)
 	fsipcbuf.read.req_fileid = fd->fd_file.id;
 	fsipcbuf.read.req_n = n;
 
-	if ((r = fsipc(FSREQ_READ, NULL)) < 0){
+	if ((r = fsipc(FSREQ_READ, NULL)) < 0)
 		return r;
-	}
+
 	memmove(buf, fsipcbuf.readRet.ret_buf, r);
 
 	return r;
-
 	//panic("devfile_read not implemented");
 }
 
@@ -151,20 +146,19 @@ devfile_write(struct Fd *fd, const void *buf, size_t n)
 	// bytes than requested.
 	// LAB 5: Your code here
 	int r;
-	
-	if (n > sizeof(fsipcbuf.write.req_buf)){
+
+	if (n > sizeof(fsipcbuf.write.req_buf))
 		n = sizeof(fsipcbuf.write.req_buf);
-	}
-	
+
 	fsipcbuf.write.req_fileid = fd->fd_file.id;
 	fsipcbuf.write.req_n = n;
-	memmove(fsipcbuf.write.req_buf, buf, n);
-	
-	if ((r = fsipc(FSREQ_WRITE, NULL)) < 0){
-		return r;
-	}
-	return r;
 
+	memmove(fsipcbuf.write.req_buf, buf, n);
+
+	if ((r = fsipc(FSREQ_WRITE, NULL)) < 0)
+		return r;
+
+	return r;
 	//panic("devfile_write not implemented");
 }
 
@@ -209,48 +203,5 @@ sync(void)
 	// by writing any dirty blocks in the buffer cache.
 
 	return fsipc(FSREQ_SYNC, NULL);
-}
-
-//Copy a file from src to dest
-int
-copy(char *src, char *dest)
-{
-	int r;
-	int fd_src, fd_dest;
-	char buffer[512];	//keep this small
-	ssize_t read_size;
-	ssize_t write_size;
-	fd_src = open(src, O_RDONLY);
-	if (fd_src < 0) {	//error
-		cprintf("cp open src error:%e\n", fd_src);
-		return fd_src;
-	}
-	
-	fd_dest = open(dest, O_CREAT | O_WRONLY);
-	if (fd_dest < 0) {	//error
-		cprintf("cp create dest  error:%e\n", fd_dest);
-		close(fd_src);
-		return fd_dest;
-	}
-	
-	while ((read_size = read(fd_src, buffer, 512)) > 0) {
-		write_size = write(fd_dest, buffer, read_size);
-		if (write_size < 0) {
-			cprintf("cp write error:%e\n", write_size);
-			close(fd_src);
-			close(fd_dest);
-			return write_size;
-		}		
-	}
-	if (read_size < 0) {
-		cprintf("cp read src error:%e\n", read_size);
-		close(fd_src);
-		close(fd_dest);
-		return read_size;
-	}
-	close(fd_src);
-	close(fd_dest);
-	return 0;
-	
 }
 

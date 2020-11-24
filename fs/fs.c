@@ -180,12 +180,14 @@ file_get_block(struct File *f, uint32_t filebno, char **blk)
 	int r;
 	uint32_t *pdiskbno;
 
-	if ((r = file_block_walk(f, filebno, &pdiskbno, 1)) < 0)
+	if ((r = file_block_walk(f, filebno, &pdiskbno, 1)) < 0){
 		return r;
-
-	if (*pdiskbno == 0)
-		if ((*pdiskbno = alloc_block()) == 0)
+	}
+	if (*pdiskbno == 0){
+		if ((*pdiskbno = alloc_block()) == 0){
 			return -E_NO_DISK;
+		}
+	}
 
 	*blk = diskaddr(*pdiskbno);
 	return 0;

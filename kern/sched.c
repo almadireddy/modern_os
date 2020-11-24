@@ -7,14 +7,12 @@
 
 void sched_halt(void);
 
-
-
 // Choose a user environment to run and run it.
 void
 sched_yield(void)
 {
 	struct Env *idle;
-	
+
 	// Implement simple round-robin scheduling.
 	//
 	// Search through 'envs' for an ENV_RUNNABLE environment in
@@ -31,54 +29,25 @@ sched_yield(void)
 	// below to halt the cpu.
 
 	// LAB 4: Your code here.
-	
-	/*
-	int i = 0, j = 1, k = 0;
+	int i, count;
 
-	if (curenv)
-	    i = curenv - envs;
-	else 
-	    i = NENV - 1;
-
-	// cprintf("sched/sched_yield: searching from %d\n", i);
-
-	for (; j <= NENV; j++) {
-	    k = (i + j) % NENV; 	// Loop circlularly
-
-	    if (envs[k].env_status == ENV_RUNNABLE) {
-		env_run(&envs[k]);
-	    }
-	}
-	*/
-
-	//new loop attempt
-	
-	int i, j;
 	idle = thiscpu->cpu_env;
-	
-	if (idle != NULL){
+	if (idle != NULL)
 		i = ENVX(idle->env_id);
-	}
-
-	for (j = 0; j < NENV; j++){
-
-		i = (i +1) % NENV;
-		if (envs[i].env_status == ENV_RUNNABLE){
+	for (count = 0; count < NENV; count++) {
+		i = (i + 1) % NENV;
+		if (envs[i].env_status == ENV_RUNNABLE) {
 			env_run(&envs[i]);
 			return;
 		}
 	}
 
-
-	if (curenv && curenv->env_status == ENV_RUNNING) {
-	    env_run(curenv);
-	}
+	if (idle && idle->env_status == ENV_RUNNING)
+		env_run(idle);
 
 	// sched_halt never returns
 	sched_halt();
 }
-
-
 
 // Halt this CPU when there is nothing to do. Wait until the
 // timer interrupt wakes it up. This function never returns.

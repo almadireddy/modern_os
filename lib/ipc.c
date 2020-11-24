@@ -23,38 +23,27 @@ int32_t
 ipc_recv(envid_t *from_env_store, void *pg, int *perm_store)
 {
 	// LAB 4: Your code here.
-	
 	int r;
 	void *page = pg;
 
-	if (page == NULL){
+	if (page == NULL)
 		page = (void *)KERNBASE;
-	}
 
-	if ((r = sys_ipc_recv(page)) < 0){
-		if(from_env_store != NULL){
-		
+	if ((r = sys_ipc_recv(page)) < 0) {
+		if (from_env_store != NULL)
 			*from_env_store = 0;
-		}
-		if (perm_store != NULL){
-
+		if (perm_store != NULL)
 			*perm_store = 0;
-		}
-		
 		return r;
 	}
 
-	if (from_env_store != NULL){
-
+	if (from_env_store != NULL)
 		*from_env_store = thisenv->env_ipc_from;
-	}
-	if (perm_store != NULL){
 
+	if (perm_store != NULL)
 		*perm_store = thisenv->env_ipc_perm;
-	}
 
 	return thisenv->env_ipc_value;
-
 	//panic("ipc_recv not implemented");
 	//return 0;
 }
@@ -71,28 +60,19 @@ void
 ipc_send(envid_t to_env, uint32_t val, void *pg, int perm)
 {
 	// LAB 4: Your code here.
-	
 	int r;
 	void *page = pg;
 
-	if (page == NULL){
+	if (page == NULL)
+		page = (void *)KERNBASE;
 
-		page = (void*)KERNBASE;
-	}
-
-	while ((r = sys_ipc_try_send(to_env, val, page, perm)) == -E_IPC_NOT_RECV){
-
+	while ((r = sys_ipc_try_send(to_env, val, page, perm)) == -E_IPC_NOT_RECV)
 		sys_yield();
-	}
 
-	if (r!= 0){
-
-		panic("error releasing on ipc_send procedure");
-	}
-
+	if (r != 0)
+		panic("error on ipc send procedure");
 	//panic("ipc_send not implemented");
 }
-
 
 // Find the first environment of the given type.  We'll use this to
 // find special environments.
@@ -101,9 +81,8 @@ envid_t
 ipc_find_env(enum EnvType type)
 {
 	int i;
-	for (i = 0; i < NENV; i++) {
+	for (i = 0; i < NENV; i++)
 		if (envs[i].env_type == type)
 			return envs[i].env_id;
-	}
 	return 0;
 }

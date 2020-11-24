@@ -27,6 +27,7 @@ struct Command {
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
+	{ "backtrace", "Backtrace", mon_backtrace },
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -62,47 +63,41 @@ int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
 	// Your code here.
-	
-	uint64_t rip;
-	uint64_t rbp = read_rbp();
+	int i;
+	uint32_t arg;				// argument
+	uint64_t rbp, rip;			// rbp and rip
+	struct Ripdebuginfo info;	// backtrace info structure
 
+	cprintf("\033[41;36mStack backtrace:\033[0m\n");
+
+	// read rbp and rip from register
+	// call debuginfo_rip to get backtrace information
+	rbp = read_rbp();
 	read_rip(rip);
+	debuginfo_rip(rip, &info);
 
-	cprintf("Stack backtrace: \n");
-	while(rbp != 0){
-		cprintf("rbp %016x rip %016x \n", rbp, rip);
-		struct Ripdebuginfo info;
-		int debug_rip = debuginfo_rip((uintptr_t)rip, &info);
-		
-		if (debug_rip != -1){
-			int num_arg = info.rip_fn_narg;
-			
-			// _dwarf_frame_params
-			cprintf("%s:%d: %s+%016d args:%d ", 
-				info.rip_file, info.rip_line, 
-				info.rip_fn_name, rip - info.rip_fn_addr, 
-				num_arg+1);
-			
-			//Use return adress to form frame base
-			uint64_t frame_base = rbp + 8 + 8;
-			int arg_point = 0;
-			while (arg_point <= num_arg){
-				int offset = info.offset_fn_arg[arg_point];
-				uint64_t arg = frame_base + offset;
-
-				cprintf("%016x ", *(uint32_t *)arg);
-				arg_point++;
-			}
-		}
-
+	while (rbp != 0) {
+		// print stack and debug information
+		cprintf("  rbp %016x  rip %016x\n", rbp, rip);
+		cprintf("       %s:%d: ", info.rip_file, info.rip_line);
+		for (i = 0; i < info.rip_fn_namelen; i++)
+			cprintf("%c", info.rip_fn_name[i]);
+		cprintf("+%016x", rip - info.rip_fn_addr);
+		cprintf("  args:%d ", info.rip_fn_narg);
+		for (i = 0; i < info.rip_fn_narg; i++)
+			cprintf(" %016x", *((uint32_t *) (rbp - (i + 1) * 4)));
 		cprintf("\n");
-
-		rip = *(uint64_t *)(rbp + 8);
-		rbp = *(uint64_t *)(rbp);
+		// backtrace to upper level
+		rip = *((uint64_t *) (rbp + 8));
+		rbp = *((uint64_t *) rbp);
+		debuginfo_rip(rip, &info);
 	}
 
 	return 0;
 }
+
+
+
 /***** Kernel monitor command interpreter *****/
 
 #define WHITESPACE "\t\r\n "
